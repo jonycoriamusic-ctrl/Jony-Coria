@@ -24,6 +24,7 @@ The user authorized connecting Firebase, retaining the local Jony demo, and prep
 - Created all seven composite indexes from `firebase/firestore.indexes.json` through the console. `firebase firestore:indexes --project jony-coria` returned seven live definitions, with no missing index after normalizing Firestore's implicit `__name__` field. A read-only Firestore Admin API status check subsequently returned `READY` for all seven.
 - Obtained local Google Application Default Credentials for `developer@inizia.agency` through the user's browser verification. A read-only Admin SDK check listed zero collections in the real `jony-coria` database. A Web SDK read of the absent public `publicUpdates/jony` document succeeded; a direct read of `musicians/no-such-user` returned `permission-denied`.
 - Firebase CLI authenticated as `developer@inizia.agency` and can list the project and database. Its rules/indexes deployment command received HTTP 403 because this account lacks `serviceusage.services.use` (`roles/serviceusage.serviceUsageConsumer` or equivalent). Console publication worked; automated deployment remains blocked by that permission.
+- Local Admin Auth `listUsers` could not be exercised with user ADC: Identity Toolkit requires a quota project, and `gcloud auth application-default set-quota-project jony-coria` is denied by the same missing `serviceusage.services.use` permission. Auth behavior passed emulator integration, but production Auth Admin still needs hosted-identity or corrected local IAM verification.
 - Storage page explicitly requires a billing account / Blaze upgrade. No bucket provisioned or billing changed.
 - No API/frontend deployment yet. The production database has no seeded Jony profile or demo requests.
 
@@ -39,7 +40,7 @@ The user authorized connecting Firebase, retaining the local Jony demo, and prep
 ## Release prerequisites
 
 - All seven Firestore indexes are Ready. A server-side read with production credentials succeeded and confirmed zero collections. The database already exists in `nam5`; do not try to recreate it in Santiago.
-- Grant the deployment identity `serviceusage.services.use` before using Firebase CLI deployment. This is not needed for the console-created rules/indexes already present.
+- Grant the deployment identity `serviceusage.services.use` before using Firebase CLI deployment or local Auth Admin tests. This is not needed for the console-created rules/indexes already present or the successful Firestore Admin read.
 - Project rename by an account with project-update permission.
 - Server hosting and credentials remain open. Cloudinary Free replaces Firebase Storage for images; the Spark plan remains unchanged.
 - Production server credentials via managed identity or a deployment secret; never public frontend environment variables or committed keys.
