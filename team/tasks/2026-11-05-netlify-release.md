@@ -16,6 +16,6 @@ The user requested a live Netlify Free release at `musicaalacarta.netlify.app`, 
 
 ## Remaining verification
 
-- Obtain a least-privilege service account from the project owner, store it only as a production Functions secret, connect the GitHub repository to Netlify, deploy, then verify hosted API/web and sign-up/QR flows.
+- Obtain a least-privilege service account from the project owner, store it only as a production Functions secret, deploy manually, then verify hosted API/web and sign-up/QR flows. The user declined GitHub webhook/deploy-key access, so the site is intentionally not connected to GitHub CI.
 - Check Netlify's hosted Linux `sharp` bundle, response payload and cold-start behavior. Check real-device layout and Argentina network latency. Do not claim a live release until these pass.
 - Independent source review exists for the pre-Netlify application. The Netlify adapter and exact deployed build still need separate review; physical-phone review and product sign-off remain pending.

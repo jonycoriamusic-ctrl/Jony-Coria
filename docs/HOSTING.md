@@ -47,10 +47,10 @@ The previous $3 Atlas daily-snapshot add-on and five-minute-loss/one-hour-recove
 - Use managed application credentials on Firebase/Google hosting. The Express runtime service identity is server-only and least privileged. Never ship service-account files, provider credentials or Admin SDK access to the browser.
 - Configure origins/API base URL, Firebase authorized domains, email verification/recovery links and index/rules deployment. Firebase ID tokens authenticate REST requests; private reads have independently tested rules.
 - Store deadlines durably. Commands and relevant reads enforce expiry/overdue policies even when housekeeping has not run. A scheduler, if enabled, is bounded/idempotent and its own billing is considered; no in-process timer is treated as durable in Functions.
-- Keep staging/emulator and production data/credentials separated. Use a dedicated staging Firebase project; do not route preview clients to production writes.
+- Keep the local demo/emulators and production data/credentials separated. The user selected no cloud non-production project for now; never route deploy previews to production writes.
 - Validate the Next.js adapter, Express function, Admin transactions, read projections, authenticated listeners, cold starts and current quotas in a small deployment spike. Mock tests are insufficient for regional latency or contention.
-- Monitor read/write volume, listener reconnects, API errors and invocation duration, overdue transfer reviews, failed backups and index/storage growth. Add an operator intake-pause path when infrastructure cannot accept new commitments safely.
+- Monitor read/write volume, listener reconnects, API errors, invocation duration, failed backups and index/storage growth. Pause intake when infrastructure cannot accept new commitments safely.
 
 ## Remaining choices
 
-The user will create Firebase. Configure email/password for musicians, transparent anonymous identity for guest access, Firestore, a private Storage bucket and the Express runtime. Confirm deployment/billing settings, runtime versions, backup/export and receipt retention before the pilot; no configuration is changed by these documents. The product architecture now uses Firebase/Express; a billing decision and actual live-hosting configuration have not been made by this document.
+The Firebase project, Authentication providers and Firestore already exist. Cloudinary Free replaces Firebase Storage. The Netlify Free project and same-origin Express deployment configuration also exist. Before the live release, the project owner must supply a least-privilege Firebase service account for the Netlify Function; then run the hosted guest/musician/QR checks and decide backup/receipt retention. No paid billing has been activated.

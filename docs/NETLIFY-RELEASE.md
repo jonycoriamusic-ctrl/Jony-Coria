@@ -3,7 +3,7 @@
 ## Current target
 
 - Netlify team: `jony-coria`; project: `musicaalacarta`; intended URL: <https://musicaalacarta.netlify.app>.
-- Source: `jonycoriamusic-ctrl/Jony-Coria`, root npm workspaces. `netlify.toml` builds `apps/web/.next` and packages `netlify/functions/api.ts`. `/api/*` is rewritten to the Express function before Next.js routing.
+- Source: the local checkout of `jonycoriamusic-ctrl/Jony-Coria`, root npm workspaces. The user selected manual deployments, with no GitHub webhook or Netlify GitHub App connection. `netlify.toml` builds `apps/web/.next` and packages `netlify/functions/api.ts`. `/api/*` is rewritten to the Express function before Next.js routing.
 - Production data: Firebase project `jony-coria`, Firestore `(default)` in `nam5`. The database has restrictive rules and seven ready indexes. It has no Jony demo records. The local demo remains in ignored `.data/demo.json`.
 - Media: Cloudinary Free. API key and secret are stored with Netlify Functions production scope. Never store a Firebase Admin credential in source, a `NEXT_PUBLIC_*` variable, or a browser.
 
@@ -17,6 +17,8 @@ Set these as **production / Functions-only secrets** in Netlify:
 - `FIREBASE_SERVICE_ACCOUNT_JSON` containing a `jony-coria` service-account JSON credential with only the permissions needed to verify Firebase Auth tokens and access Firestore. The API validates the JSON's project ID and refuses to start without the secret on Netlify.
 
 The service-account key must be created by the Firebase project owner or an IAM administrator. Treat the key as a long-lived production credential: restrict who can read it, rotate it if exposed, and do not save it in Git or a shared document. No Blaze billing is required for this Netlify API deployment.
+
+Manual release command from the repository root after setting all secrets: `netlify deploy --remote --prod --site musicaalacarta --filter @musica/web`. The remote build uses Linux so native image dependencies match Netlify's runtime. GitHub pushes alone do not deploy this site.
 
 ## QR and show resolution
 

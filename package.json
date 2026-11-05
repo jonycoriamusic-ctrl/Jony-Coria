@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "APP_ENV=non-prod NEXT_PUBLIC_APP_ENV=non-prod NEXT_PUBLIC_AUTH_MODE=demo concurrently -k -n api,web -c gray,white \"npm run dev -w @musica/api\" \"npm run dev -w @musica/web\"",
-    "dev:firebase": "API_PORT=4001 API_ORIGIN=http://127.0.0.1:4001 node --env-file=config/non-prod.env.example node_modules/concurrently/dist/bin/concurrently.js -k -n emulator,api,web -c yellow,gray,white \"firebase emulators:start --project demo-musica-non-prod --only auth,firestore,storage\" \"npm run dev:firebase -w @musica/api\" \"npm run dev -w @musica/web -- --port 3001\"",
-    "build": "npm run build -w @musica/api && npm run build -w @musica/web",
+    "dev": "node init && APP_ENV=non-prod NEXT_PUBLIC_APP_ENV=non-prod NEXT_PUBLIC_AUTH_MODE=demo concurrently -k -n api,web -c gray,white \"npm run dev -w @musica/api\" \"npm run dev -w @musica/web\"",
+    "dev:firebase": "node init && API_PORT=4001 API_ORIGIN=http://127.0.0.1:4001 node --env-file=config/non-prod.env.example node_modules/concurrently/dist/bin/concurrently.js -k -n emulator,api,web -c yellow,gray,white \"firebase emulators:start --project demo-musica-non-prod --only auth,firestore,storage\" \"npm run dev:firebase -w @musica/api\" \"npm run dev -w @musica/web -- --port 3001\"",
+    "build": "node init && npm run build -w @musica/api && npm run build -w @musica/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:rules": "firebase emulators:exec --project demo-musica-non-prod --only firestore,storage \"node --test firebase/tests/rules.test.mjs\"",
