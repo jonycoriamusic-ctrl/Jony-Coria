@@ -111,7 +111,7 @@ export function createApp(options: AppOptions) {
   app.use((error: unknown,_req: Request,res: Response,_next: NextFunction) => {
     if (error instanceof DomainError) return res.status(error.status).json({error:{code:error.code,message:error.message}});
     if (error instanceof ZodError) return res.status(422).json({error:{code:'VALIDATION_ERROR',message:'Revisá los datos ingresados.',fields:error.issues.map(issue=>({path:issue.path.join('.'),message:issue.message}))}});
-    if (error instanceof multer.MulterError) return res.status(422).json({error:{code:'INVALID_IMAGE',message:'Usá una sola imagen de hasta 8 MB.'}});
+    if (error instanceof multer.MulterError) return res.status(422).json({error:{code:'INVALID_IMAGE',message:'Usá una sola imagen de hasta 4 MB.'}});
     if ((error as {type?:string}).type === 'entity.too.large') return res.status(413).json({error:{code:'TOO_LARGE',message:'El contenido es demasiado grande.'}});
     console.error('API operation failed:',error instanceof Error ? error.name : 'Unknown error');
     res.status(500).json({error:{code:'INTERNAL_ERROR',message:'No pudimos guardar el cambio. Intentá nuevamente.'}});

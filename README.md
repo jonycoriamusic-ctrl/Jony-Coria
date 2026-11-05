@@ -2,9 +2,9 @@
 
 A mobile web app where bar guests scan the musician’s reusable QR, choose a song from the performing musician's repertoire, optionally add a dedication, and pay. The musician manages each night's capacity and queue from a phone. Jony is the first musician; accounts and data are separated for future musicians.
 
-**Working direction: Next.js + TypeScript frontend, Express + TypeScript REST backend, Firebase Authentication and Cloud Firestore Standard.** The backend follows MVC/Clean Architecture; the frontend has explicit domain, application, presentation and state-management boundaries. Firebase was selected to reduce identity/realtime integration work. All business writes go through Express. The local demo uses an atomic JSON repository and bounded polling. Firebase integration uses verified identity and scoped Firestore operations through Express; direct browser Firestore/Storage access is denied. Live cloud deployment is pending the prerequisites recorded below.
+**Working direction: Next.js + TypeScript frontend, Express + TypeScript REST backend, Firebase Authentication and Cloud Firestore Standard.** The backend follows MVC/Clean Architecture; the frontend has explicit domain, application, presentation and state-management boundaries. Firebase was selected to reduce identity/realtime integration work. All business writes go through Express. The local demo uses an atomic JSON repository and bounded polling. Firebase integration uses verified identity and scoped Firestore operations through Express; direct browser Firestore/Storage access is denied. Netlify Free is the selected host for the Next.js site and the Express API function.
 
-Both guest and musician experiences are mobile first and responsive on tablet/desktop, with reusable Tailwind components and a shared monochrome theme. The production web app is registered in Firebase project `jony-coria`; Email/Password and anonymous Auth providers are enabled. Cloudinary image hosting is connected and verified. The production Firestore database exists, its rules and indexes are configured, and a read-only server connection has been verified. The API and frontend still need public hosting.
+Both guest and musician experiences are mobile first and responsive on tablet/desktop, with reusable Tailwind components and a shared monochrome theme. The production web app is registered in Firebase project `jony-coria`; Email/Password and anonymous Auth providers are enabled. Cloudinary image hosting is connected and verified. The production Firestore database exists, its rules and indexes are configured, and a read-only server connection has been verified. The `musicaalacarta` Netlify project has been created; deployment status is tracked in [Netlify release](docs/NETLIFY-RELEASE.md).
 
 ## Run locally
 
@@ -19,7 +19,7 @@ Open <http://127.0.0.1:3000>. The Next.js frontend proxies `/api` to Express on 
 
 Musician login: **jony@demo.local** / **musica-demo**. Guests need no account. Demo login is refused in production mode. Use only test content: the alias `DEMO.NO.TRANSFERIR` is a placeholder and no money should be transferred.
 
-Demo data and sessions persist in `.data/demo.json`, with images in `.data/media/`. Stopping the server preserves them. This single-process repository is intentionally local, not a production database. The QR points at localhost until the app has a public domain, so it cannot yet be scanned from another phone.
+Demo data and sessions persist in `.data/demo.json`, with images in `.data/media/`. Stopping the server preserves them. This single-process repository is intentionally local, not a production database. The local QR points at localhost and cannot be scanned from another phone. A production QR uses the stable `https://musicaalacarta.netlify.app/q/{musicianSlug}` route.
 
 To test **real Firebase Email/Password registration and musician profile creation locally**, start a separate Firebase emulator preview with Java 21 and Node 22:
 
@@ -47,7 +47,7 @@ npm test
 npm run build
 ```
 
-The API suite covers capacity races, idempotency, ownership, good-faith queue entry, expiry, immutable quotes, show exclusivity, receipt privacy, image decoding, CSV validation and persisted state. The build command validates the API deployable and Next.js bundle. Production builds require the Firebase web variables and a real HTTPS API_ORIGIN; the demo cannot run as a production service. See the [implementation evidence](team/tasks/2026-11-05-local-application.md) for browser checks, independent review and remaining release gates.
+The API suite covers capacity races, idempotency, ownership, good-faith queue entry, expiry, immutable quotes, show exclusivity, receipt privacy, image decoding, CSV validation and persisted state. The build command validates the optional Firebase Functions deployable and Next.js bundle. Netlify builds use the same-origin Express Function via `/api/*`; other production hosts require a real HTTPS `API_ORIGIN`. The demo cannot run as a production service. See the [implementation evidence](team/tasks/2026-11-05-local-application.md) for browser checks, independent review and remaining release gates.
 
 ## Start here
 
@@ -61,6 +61,7 @@ The API suite covers capacity races, idempotency, ownership, good-faith queue en
 | [Layers and optimistic state](docs/APPLICATION-ARCHITECTURE.md) | MVC/Clean Architecture, frontend state ownership, optimistic updates and reconciliation |
 | [Technology options](docs/TECH-STACK-OPTIONS.md) | Four monolithic web stacks, tradeoffs, scoring, official sources, and recommendation |
 | [Hosting for Argentina](docs/HOSTING.md) | Proposed app/database regions, operating costs, recovery, and deployment requirements |
+| [Netlify release](docs/NETLIFY-RELEASE.md) | Deployment configuration, required secrets, verification and permanent QR URL |
 | [Quality and acceptance](docs/QUALITY-AND-ACCEPTANCE.md) | Failure scenarios, tenant/security boundaries, and release checks |
 | [Decision register](docs/DECISIONS.md) | Confirmed requirements, recommendations, defaults, and open business inputs |
 | [Planning task record](team/tasks/2026-11-05-engineering-foundation.md) | Actual team assignments, review results, and handoff |
@@ -85,9 +86,9 @@ Run `npm run test:firebase` to exercise Firebase identity, database transactions
 Before deployment:
 
 - All seven Firestore indexes are Ready and a production server read succeeded. The existing `nam5` location cannot be changed. Automated Firebase CLI deployment needs `serviceusage.services.use` for `developer@inizia.agency`; rules and indexes were created through the console without that permission.
-- Cloudinary Free is selected and live-tested for images. Supply its server credentials in the deployed host's secret settings; the local credential file is ignored by Git. Firebase Storage is not required for this provider. The optional Firebase Functions deployment still requires Blaze; external Express hosting remains possible and no paid plan has been activated.
-- Set `API_ORIGIN` in the frontend hosting environment to the actual deployed function base URL (including `/api` for a function named `api`). Next.js appends the Express `/api/...` route. Configure Firebase Auth's authorized domain for the deployed frontend.
-- Use managed server credentials on Firebase, or server-only secret credentials on another host. Never expose Admin credentials as `NEXT_PUBLIC_*` variables.
+- Cloudinary Free is selected and live-tested for images. Its credentials belong only in Netlify Functions secrets; the local credential file is ignored by Git. Firebase Storage is not required. Uploads are capped at 4 MiB to fit Netlify's Function payload limit.
+- The Netlify project is `musicaalacarta`, with `https://musicaalacarta.netlify.app` as its intended public address. Netlify routes `/api/*` to the Express Function on the same origin. No separate `API_ORIGIN` is required there; other hosts still need it. Configure Firebase Auth's authorized domain if redirect-based authentication is added.
+- Supply the `jony-coria` service account JSON only as a Netlify Functions secret. Never expose Admin credentials as `NEXT_PUBLIC_*` variables or commit them.
 - Deploy the API and frontend, verify the full guest/musician flow, and review the exact release candidate. Keep the Jony test profile and requests in the local demo only.
 
 See [Firebase production task](team/tasks/2026-11-05-firebase-production.md) for verified console state, tests and open release prerequisites. The current account also cannot edit the project display name; the requested name is Musica a la carta, while the immutable technical ID stays `jony-coria`. No live release has been completed. Physical-device acceptance remains pending.

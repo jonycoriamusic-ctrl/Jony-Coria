@@ -45,7 +45,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
   async function upload(kind: "avatar" | "banner", file?: File) {
     if (!file) return;
     setFileError(undefined);
-    if (file.size > (kind === "avatar" ? 4 : 8) * 1024 * 1024) {
+    if (file.size > 4 * 1024 * 1024) {
       setFileError(new Error("Image too large"));
       return;
     }

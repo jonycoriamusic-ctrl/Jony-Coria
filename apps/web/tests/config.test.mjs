@@ -46,3 +46,7 @@ test('production Next configuration rejects demo mode and builds HTTPS proxy', (
   const result = evaluate(nextUrl, {}, 'const config = module.default?.default ?? module.default; const rules = await config.rewrites(); if(rules[0].destination !== "https://example.invalid/api/api/:path*") process.exit(1);');
   assert.equal(result.status, 0, result.stderr);
 });
+test('Netlify production serves the API on the same origin', () => {
+  const result = evaluate(nextUrl, {NETLIFY:'true',API_ORIGIN:''}, 'const config = module.default?.default ?? module.default; const rules = await config.rewrites(); if(rules.length !== 0) process.exit(1);');
+  assert.equal(result.status, 0, result.stderr);
+});

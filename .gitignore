@@ -9,6 +9,7 @@ coverage/
 .DS_Store
 # Generated artifacts, provider logs and local credentials
 .firebase/
+.netlify/
 **/dist/
 *-debug.log
 *.log
@@ -21,3 +22,6 @@ config/*.local.json
 firebase-export*/
 !**/.env.example
 !config/*.env.example
+
+# Local Netlify folder
+.netlify

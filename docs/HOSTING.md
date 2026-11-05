@@ -1,24 +1,24 @@
 # Low cost Firebase and Express hosting for Argentina
 
-The selected direction is Next.js frontend, Express/TypeScript REST API, Firebase Authentication and Cloud Firestore Standard. Free allowances and low operating cost remain priorities. Firebase/Express replaces the prior Atlas/Mongoose plan; the user registered the web app in the existing production project `jony-coria`. Email/password and anonymous Auth are enabled. The Standard Firestore database is active in `nam5`, with rules and indexes created; Cloudinary Free holds images. Public API/frontend deployment remains open. See `team/tasks/2026-11-05-firebase-production.md` for verified state. Sources checked 2026-11-05.
+The selected direction is Next.js frontend, Express/TypeScript REST API, Firebase Authentication and Cloud Firestore Standard. Free allowances and low operating cost remain priorities. The production project `jony-coria` has Email/Password and anonymous Auth, Firestore in `nam5` with rules and indexes, and Cloudinary Free for images. The `musicaalacarta` Netlify Free project now exists; Next.js and the Express API are configured for one same-origin deployment. The live release status is in `docs/NETLIFY-RELEASE.md`. Sources checked 2026-11-05.
 
 ## Proposed deployment
 
 | Component | Proposed host | Cost boundary |
 | --- | --- | --- |
 | Next.js frontend | Netlify Free | Monthly credits and framework/runtime limits; can pause when exhausted |
-| Express REST API | One Firebase second-generation HTTP function | Blaze billing required, eligible no-cost allowances then metered usage |
+| Express REST API | Netlify Function alongside Next.js | Included in the Netlify Free fixed monthly allowance; no Firebase Blaze upgrade |
 | Identity | Firebase Authentication | Email/password musicians and anonymous guests; check configured auth quotas; no SMS in MVP |
 | Database and realtime views | Cloud Firestore Standard | Free database quota, then paid usage on Blaze |
 | Transfer screenshots | Cloudinary Free authenticated assets, accessed through Express | User-selected; shared 25-credit storage/traffic/transformation quota; no card required |
 | Profile avatar/banner | Separate Cloudinary profile namespace, sanitized variants served by public Express route | Shared Free credits; upload/download usage separate from private receipt authorization |
 | Backup/recovery | Firestore-supported backup/export process to be selected | Not included in the database free allowance; former Atlas pricing no longer applies |
 
-Firebase supports wrapping an Express application in an HTTP function. Keep the app entrypoint portable to ordinary Node hosting, while retaining one backend codebase. [Express integration](https://firebase.google.com/docs/functions/http-events).
+Netlify supports wrapping Express in a Function alongside a frontend application. The existing Firebase Functions entrypoint remains an optional deployment target; the app retains one backend codebase. [Netlify Express integration](https://docs.netlify.com/build/frameworks/framework-setup-guides/express/), [Firebase Express integration](https://firebase.google.com/docs/functions/http-events).
 
 Deploying Functions requires the Blaze plan. This is pay-as-you-go with no-cost allowances, not a promise of a zero bill. Builds/artifacts, logs, networking, API execution, database reads/writes, storage and backups must all be accounted for. Set minimum instances to zero for the cost-first pilot, bound instance growth and requests, and monitor cold starts. Budget alerts are notifications, and an instance limit is not a hard currency cap. [Deployment requirements](https://firebase.google.com/docs/functions/get-started), [Firebase pricing](https://firebase.google.com/pricing).
 
-Netlify currently offers a 300-credit monthly Free plan and Next.js support; verify remaining usage before a show. Do not silently enable an upgrade or make a private organization repository public to qualify for a plan. [Netlify pricing](https://www.netlify.com/pricing/), [Next.js support](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/).
+Netlify currently offers a 300-credit monthly Free plan and Next.js support; verify remaining usage before a show. The fixed Free limit can pause the site when exhausted. Do not silently enable an upgrade. [Netlify pricing](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/), [Next.js support](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/).
 
 ## Image storage cost
 
@@ -30,7 +30,7 @@ Transfer screenshots and musician profile images/banners require object storage 
 
 The user-created production Firestore database is in `nam5`, which cannot be changed after creation. Earlier plans proposed Santiago (`southamerica-west1`) because it is closer to Buenos Aires; that proposal no longer describes the actual database. Firebase recommends `us-central1` for a function serving a `nam5` database, so the optional Functions entrypoint now defaults there. An external API host should likewise account for database latency and be measured from Argentina before launch. The frontend CDN location does not establish the API's region. [Firestore locations](https://firebase.google.com/docs/firestore/locations), [Functions locations](https://firebase.google.com/docs/functions/locations).
 
-Keeping Functions near Firestore is operationally simpler than placing a free external Node server far away. A region chosen for latency may have a different cost profile from US-region examples; quote actual usage only after the compatibility/load test.
+Netlify Free uses the default Ohio Function region; São Paulo selection requires Pro/Enterprise. This is reasonably close to the existing US `nam5` database, but Argentina latency still needs measurement on the deployed app. [Netlify Function regions](https://docs.netlify.com/build/functions/configuration/).
 
 ## What can remain free
 
@@ -38,7 +38,7 @@ Firestore's documented free database allowance includes 1 GiB storage, 50,000 do
 
 One musician and a bounded show may fit free usage, but no measured budget exists yet. Target low usage with exact-document guest listeners, a show-scoped musician listener, bounded menu reads, no redundant polling, no needless projection rewrites, and short API operations. Stop hidden/terminal listeners while accounting for reconnect reads.
 
-External Express hosting remains an alternative compute deployment, but does not remove the Firebase Storage billing requirement for screenshot uploads. A sleeping server requires latency testing before a show. No zero-billing storage alternative has been selected.
+Netlify is the selected external Express host, and Cloudinary Free is the selected image provider. Neither requires Firebase Storage billing. Cold-start latency still needs testing before a show.
 
 The previous $3 Atlas daily-snapshot add-on and five-minute-loss/one-hour-recovery proposal do not apply. Choose a modest Firestore backup/export schedule with actual pricing, restore evidence and an explicit recovery gap before the paid pilot. Reconcile external bank transfers after restoring state.
 
