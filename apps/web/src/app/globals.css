@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "../styles/theme.css";
+
+/* Global defaults only. Layout and component styles use Tailwind utilities. */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-body;
+  }
+}
+
+/* Centralized safe-area helpers for the shared mobile navigation shell. */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility pb-nav {
+  padding-bottom: calc(
+    var(--spacing-bottom-nav) + env(safe-area-inset-bottom, 0px)
+  );
+}

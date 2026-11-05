@@ -1,0 +1,12 @@
+import { build } from 'esbuild';
+import { readFile,writeFile,mkdir,rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+const root=new URL('../',import.meta.url),dist=new URL('dist/',root);
+await rm(dist,{recursive:true,force:true});await mkdir(dist,{recursive:true});
+await build({entryPoints:[fileURLToPath(new URL('src/functions.ts',root))],outfile:fileURLToPath(new URL('functions.js',dist)),bundle:true,platform:'node',target:'node22',format:'esm',packages:'external',sourcemap:true});
+const source=JSON.parse(await readFile(new URL('package.json',root),'utf8'));
+const rootPackage=JSON.parse(await readFile(new URL('../../package.json',root),'utf8'));
+const overrides=Object.fromEntries(Object.entries(rootPackage.overrides||{}).filter(([name])=>['@grpc/grpc-js','uuid'].includes(name)));
+const dependencies=Object.fromEntries(Object.entries(source.dependencies).filter(([name])=>name!=='@musica/contracts'));
+await writeFile(new URL('package.json',dist),JSON.stringify({name:'musica-functions',private:true,type:'module',main:'functions.js',engines:{node:'22'},dependencies,overrides},null,2)+'\n');
+console.log('Built standalone Firebase Functions package at apps/api/dist (export: api).');

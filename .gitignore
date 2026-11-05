@@ -1,0 +1,23 @@
+node_modules/
+.next/
+.next-firebase/
+.data/
+.env*
+!.env.example
+*.tsbuildinfo
+coverage/
+.DS_Store
+# Generated artifacts, provider logs and local credentials
+.firebase/
+**/dist/
+*-debug.log
+*.log
+.envrc
+*.pem
+*.key
+*service-account*.json
+*serviceAccount*.json
+config/*.local.json
+firebase-export*/
+!**/.env.example
+!config/*.env.example

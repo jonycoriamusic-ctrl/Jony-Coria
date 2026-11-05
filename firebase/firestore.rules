@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public change notices contain only show capacity/status and an opaque revision.
+    match /publicUpdates/{slug} { allow get: if true; allow list, write: if false; }
+    // Express verifies Firebase identity and owns all reads/writes.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

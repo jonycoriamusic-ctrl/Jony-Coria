@@ -1,0 +1,7 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Images are validated and streamed through the authorized Express API.
+    match /{path=**} { allow read, write: if false; }
+  }
+}

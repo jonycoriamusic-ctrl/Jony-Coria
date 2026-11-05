@@ -1,0 +1,31 @@
+{
+  "name": "@musica/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "APP_ENV=non-prod DEMO_MODE=true tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/**/*.test.ts",
+    "dev:firebase": "DEMO_MODE=false tsx watch src/server.ts",
+    "build": "node scripts/build.mjs",
+    "test:emulator": "tsx --test src/firebase/*.integration.test.ts"
+  },
+  "dependencies": {
+    "@musica/contracts": "*",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.4.0",
+    "multer": "^2.0.2",
+    "sharp": "^0.35.5",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^2.0.0",
+    "esbuild": "^0.28.2"
+  }
+}
