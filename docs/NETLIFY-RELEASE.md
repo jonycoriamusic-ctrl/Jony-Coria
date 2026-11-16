@@ -2,23 +2,32 @@
 
 ## Current target
 
-- Netlify team: `jony-coria`; project: `musicaalacarta`; intended URL: <https://musicaalacarta.netlify.app>.
+- Netlify team: `jony-coria`; project: `musicaalacarta`; live URL: <https://musicaalacarta.netlify.app>. The first manual production deploy was published on 2026-11-16 (`6afb8afab3b8bd7af4e63fa1`). Production deploys are public; Netlify team-login protection is off for this site.
 - Source: the local checkout of `jonycoriamusic-ctrl/Jony-Coria`, root npm workspaces. The user selected manual deployments, with no GitHub webhook or Netlify GitHub App connection. `netlify.toml` builds `apps/web/.next` and packages `netlify/functions/api.ts`. `/api/*` is rewritten to the Express function before Next.js routing.
 - Production data: Firebase project `jony-coria`, Firestore `(default)` in `nam5`. The database has restrictive rules and seven ready indexes. It has no Jony demo records. The local demo remains in ignored `.data/demo.json`.
-- Media: Cloudinary Free. API key and secret are stored with Netlify Functions production scope. Never store a Firebase Admin credential in source, a `NEXT_PUBLIC_*` variable, or a browser.
+- Media: Cloudinary Free. Firebase Admin and Cloudinary credentials are passed as deploy-specific Function secrets with `--secret-env`; they are absent from site-level environment variables. Never store a Firebase Admin credential in source, a `NEXT_PUBLIC_*` variable, or a browser.
 
 ## Required production environment
 
-The public Firebase web identifiers and non-secret production switches come from `config/prod.env.example`. Set `DEPLOY_TARGET=netlify` in both production Builds and Functions scopes to select the same-origin API route and require explicit server credentials. Set `ALLOWED_ORIGINS=https://musicaalacarta.netlify.app` for the API.
+The public Firebase web identifiers and non-secret production switches come from `config/prod.env.example`. They are configured for the site's production context, including `DEPLOY_TARGET=netlify` and `ALLOWED_ORIGINS=https://musicaalacarta.netlify.app`. The API uses the same origin as the web app.
 
-Set these as **production / Functions-only secrets** in Netlify:
+Pass these as **deploy-specific Function secrets** on every manual release:
 
 - `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` for authenticated media.
 - `FIREBASE_SERVICE_ACCOUNT_JSON` containing a `jony-coria` service-account JSON credential with only the permissions needed to verify Firebase Auth tokens and access Firestore. The API validates the JSON's project ID and refuses to start without the secret on Netlify.
 
-The service-account key must be created by the Firebase project owner or an IAM administrator. Treat the key as a long-lived production credential: restrict who can read it, rotate it if exposed, and do not save it in Git or a shared document. No Blaze billing is required for this Netlify API deployment.
+The dedicated account is `musicaalacarta-netlify@jony-coria.iam.gserviceaccount.com`. The local JSON is stored at `~/.config/musicaalacarta/firebase-service-account.json` with owner-only permissions; the Cloudinary values are in ignored `.env.cloudinary.local`. Treat them as long-lived production credentials: restrict who can read them, rotate them if exposed, and do not save them in Git or a shared document. Netlify Free rejected marking persistent environment variables as secrets because that requires Functions-only scope, so no sensitive site-level variables are retained. No Blaze billing is required for this Netlify API deployment.
 
-Manual release command from the repository root after setting all secrets: `netlify deploy --remote --prod --site musicaalacarta --filter @musica/web`. The remote build uses Linux so native image dependencies match Netlify's runtime. GitHub pushes alone do not deploy this site.
+Manual release from the repository root with Node.js 22 and an authorized Netlify CLI:
+
+```sh
+npm ci
+npm run prepare:netlify-native
+npx --yes netlify-cli@27.20.0 build --filter @musica/web --context production
+npm run deploy:netlify
+```
+
+The native preparation installs the Linux x64 Sharp binaries into ignored `node_modules` so the Mac-built Function can process images on Netlify. The deploy script reads the two local credential files and supplies them as deploy-specific Function secrets; they are not committed or placed in Netlify's site-level variables. Every new deploy must include those secrets. The Netlify CLI requires a Git-connected site for `--remote`, which the user declined, so releases build locally and upload manually. GitHub pushes alone do not deploy this site. The command-line secret values are briefly visible to local processes while the deploy command runs; use a trusted workstation.
 
 ## QR and show resolution
 
@@ -26,10 +35,10 @@ Each musician prints one QR pointing at `https://musicaalacarta.netlify.app/q/{s
 
 The public production database is intentionally empty until a real musician registers, verifies their email, completes profile/bank details, adds songs and schedules a show. A local Jony test record must never be copied into it.
 
-## Verification before publishing or printing
+## Verification and remaining product checks
 
-1. `npm run typecheck`, `npm test`, `npm run test:firebase` and a production Next build pass. The Netlify function bundle must include Express, Firebase Admin, Cloudinary and the Linux `sharp` binary in its hosted build.
-2. The deployed `/api/v1/health` response reports `firebase` / `prod`, and `/api/v1/demo/guest` returns 404. An unknown musician QR should show a graceful empty/error state; it must not show the Jony demo.
+1. The production Next/Netlify build passed and the uploaded Function bundle includes Linux x64 Sharp binaries. Prior type, unit, and Firebase emulator checks are recorded in the task. Repeat them when code changes warrant it.
+2. The live homepage and `/ingresar` returned 200. `/api/v1/health` returned `firebase` / `prod` / 200 after removing the persistent site-level Firebase credential. `/api/v1/demo/guest` returned 404. An unknown musician QR page returned 200, and its API lookup returned a safe 404. Jony's demo is not in the production database.
 3. Register a real musician through the production form. Verify email, set the profile and bank alias, create a folder/song, schedule a show, and open its permanent QR from a phone. Submit a small test request and confirm it appears in that musician's queue. Do not use actual money during a test.
 4. Verify the guest QR responds to a capacity change and the next scheduled show. Review private receipt access, mobile layout and Argentina connectivity before printing a QR for tables.
 
