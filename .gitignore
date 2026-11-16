@@ -2,6 +2,7 @@ node_modules/
 .next/
 .next-firebase/
 .data/
+.env*
 !.env.example
 *.tsbuildinfo
 coverage/
@@ -24,4 +25,3 @@ firebase-export*/
 
 # Local Netlify folder
 .netlify
-config.bat
