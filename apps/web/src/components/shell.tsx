@@ -158,11 +158,11 @@ export function Shell({ children }: { children: ReactNode }) {
           {t(portal ? "Open guest view" : "Musician access")}
         </Link>
       </footer>
-      <div className="md:hidden" style={{ height: navHeight }} />
+      <div className="mobile-nav-spacer md:hidden" style={{ height: navHeight }} />
       <nav
         ref={bottom}
         aria-label={t("Menu")}
-        className="pb-safe fixed inset-x-0 bottom-0 z-30 flex min-h-bottom-nav justify-around border-t border-border bg-background/95 px-3 backdrop-blur md:hidden"
+        className="mobile-bottom-nav pb-safe fixed inset-x-0 bottom-0 z-30 flex min-h-bottom-nav justify-around border-t border-border bg-background/95 px-3 backdrop-blur md:hidden"
       >
         {nav.map(([href, label, Icon]) => (
           <Link
