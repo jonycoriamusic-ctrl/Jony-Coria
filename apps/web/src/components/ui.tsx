@@ -13,7 +13,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { X, LoaderCircle, Music2, ArrowUpRight, RefreshCw, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { X, LoaderCircle, Music2, ArrowUpRight, RefreshCw, ChevronDown, ChevronUp, Check, Eye, EyeOff } from "lucide-react";
 import { useLocale } from "@/lib/i18n";
 import { ApiFailure } from "@/lib/api";
 export const cx = (...parts: (string | false | null | undefined)[]) =>
@@ -175,6 +175,40 @@ export function Field({
       />
       {hint && <span className="font-normal text-muted text-xs">{hint}</span>}
     </label>
+  );
+}
+export function PasswordField({
+  label,
+  id,
+  className,
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { label: string }) {
+  const {t} = useLocale();
+  const [visible, setVisible] = useState(false);
+  const fieldId = id || props.name || label;
+  const toggleLabel = t(visible ? "Hide password" : "Show password");
+  return (
+    <div className="grid gap-2 text-sm font-medium">
+      <label htmlFor={fieldId}>{label}</label>
+      <div className="relative">
+        <input
+          {...props}
+          id={fieldId}
+          type={visible ? "text" : "password"}
+          className={cx(inputClass, "pr-14", className)}
+        />
+        <button
+          type="button"
+          aria-label={toggleLabel}
+          aria-pressed={visible}
+          title={toggleLabel}
+          onClick={() => setVisible((current) => !current)}
+          className={cx("absolute inset-y-0 right-1 my-auto inline-flex size-11 items-center justify-center rounded-control text-muted hover:bg-surface-hover hover:text-foreground", focus)}
+        >
+          {visible ? <EyeOff size={20} aria-hidden="true"/> : <Eye size={20} aria-hidden="true"/>}
+        </button>
+      </div>
+    </div>
   );
 }
 export function TextArea({

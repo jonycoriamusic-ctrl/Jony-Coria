@@ -8,7 +8,7 @@ import { api, json, ApiFailure, saveToken } from "@/lib/api";
 import { isDemo, AuthFailure, signInMusician, registerMusician, resetPassword, sendVerification, signOutMusician } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
-import { Button, Field, ErrorNotice, Notice } from "@/components/ui";
+import { Button, Field, PasswordField, ErrorNotice, Notice } from "@/components/ui";
 
 type Mode = "login" | "register" | "reset" | "onboard";
 export function LoginView() {
@@ -95,8 +95,8 @@ export function LoginView() {
           <Field label={t("Public profile address")} hint={t("Use 3–60 lowercase letters, numbers or hyphens.")} value={slug} onChange={(event) => {setSlugEdited(true);setSlug(event.target.value.toLowerCase());}} required minLength={3} maxLength={60} pattern="[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]" autoCapitalize="none" autoCorrect="off"/>
         </> : <>
           <Field label={t("Email")} type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required/>
-          {mode !== "reset" && <Field label={t("Password")} type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} minLength={mode === "register" ? 8 : undefined} value={password} onChange={(event) => setPassword(event.target.value)} required/>}
-          {mode === "register" && <Field label={t("Confirm password")} type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required/>}
+          {mode !== "reset" && <PasswordField key={mode} label={t("Password")} autoComplete={mode === "register" ? "new-password" : "current-password"} minLength={mode === "register" ? 8 : undefined} value={password} onChange={(event) => setPassword(event.target.value)} required/>}
+          {mode === "register" && <PasswordField label={t("Confirm password")} autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required/>}
         </>}
         <ErrorNotice error={mutation.error}/>
         <Button type="submit" className="w-full" busy={mutation.isPending || checking} disabled={!!auth.error}>{t(action)}<ArrowRight size={17}/></Button>
