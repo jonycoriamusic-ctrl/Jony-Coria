@@ -78,7 +78,7 @@ export function IconButton({
   );
 }
 export const inputClass = cx(
-  "w-full min-h-12 rounded-control border border-control-border bg-surface px-3.5 py-3 text-base outline-none transition-shadow focus:border-foreground focus:ring-1 focus:ring-focus disabled:opacity-50",
+  "w-full min-w-0 min-h-12 rounded-control border border-control-border bg-surface px-3.5 py-3 text-base outline-none transition-shadow focus:border-foreground focus:ring-1 focus:ring-focus disabled:opacity-50",
   focus,
 );
 const SelectPortalContext = createContext<{
@@ -166,7 +166,7 @@ export function Field({
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
   const fieldId = id || props.name || label;
   return (
-    <label htmlFor={fieldId} className="grid gap-2 text-sm font-medium">
+    <label htmlFor={fieldId} className="grid min-w-0 gap-2 text-sm font-medium">
       {label}
       <input
         {...props}

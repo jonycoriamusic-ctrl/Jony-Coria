@@ -90,7 +90,7 @@ function ShowEditor({
           onChange={(e) => setVenue(e.target.value)}
           maxLength={120}
         />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label={t("Date")}
             type="date"
@@ -105,15 +105,17 @@ function ShowEditor({
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
           />
-          <Field
-            label={t("Song limit")}
-            type="number"
-            required
-            min={1}
-            max={500}
-            value={capacity}
-            onChange={(e) => setCapacity(Number(e.target.value))}
-          />
+          <div className="sm:col-span-2">
+            <Field
+              label={t("Song limit")}
+              type="number"
+              required
+              min={1}
+              max={500}
+              value={capacity}
+              onChange={(e) => setCapacity(Number(e.target.value))}
+            />
+          </div>
         </div>
         <fieldset>
           <legend className="mb-3 text-sm font-medium">
