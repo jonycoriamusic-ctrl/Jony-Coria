@@ -13,7 +13,7 @@ const cloudinaryPath = process.env.CLOUDINARY_ENV_FILE
 if (Number(process.versions.node.split('.')[0]) !== 22) {
   throw new Error('Manual Netlify releases require Node.js 22.');
 }
-if (!existsSync(join(root, 'apps/web/.next')) || !existsSync(join(root, 'apps/web/.netlify/functions/api.zip'))) {
+if (!existsSync(join(root, 'apps/web/.netlify/static/_next/static')) || !existsSync(join(root, 'apps/web/.netlify/functions/api.zip'))) {
   throw new Error('Build the web app and Netlify functions before deploying. See docs/NETLIFY-RELEASE.md.');
 }
 
@@ -30,6 +30,7 @@ const result = spawnSync('npx', [
   '--yes', 'netlify-cli@27.20.0', 'deploy', '--no-build', '--prod',
   '--site', 'f553f3eb-8a97-416b-b6cf-8837d4aef5c5',
   '--filter', '@musica/web',
+  '--dir', 'apps/web/.netlify/static',
   '--secret-env', `FIREBASE_SERVICE_ACCOUNT_JSON=${JSON.stringify(serviceAccount)}`,
   '--secret-env', `CLOUDINARY_API_KEY=${cloudinary.CLOUDINARY_API_KEY}`,
   '--secret-env', `CLOUDINARY_API_SECRET=${cloudinary.CLOUDINARY_API_SECRET}`,
