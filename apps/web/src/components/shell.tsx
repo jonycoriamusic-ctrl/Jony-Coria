@@ -205,9 +205,9 @@ export function PortalGuard({children}: {children: ReactNode}) {
 
 function VerificationNotice() {
   const auth = useAuth();
-  const {t} = useLocale();
+  const {t, locale} = useLocale();
   const [sent, setSent] = useState(false);
-  const send = useMutation({mutationFn: sendVerification, onSuccess: () => setSent(true)});
+  const send = useMutation({mutationFn: () => sendVerification(locale), onSuccess: () => setSent(true)});
   const refresh = useMutation({mutationFn: refreshMusician});
   if (isDemo || !auth.musician || auth.musician.emailVerified) return null;
   return <section className="mb-6 rounded-card border border-control-border bg-surface-subtle p-5">

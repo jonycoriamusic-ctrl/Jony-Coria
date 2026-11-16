@@ -12,7 +12,7 @@ import { Button, Field, PasswordField, ErrorNotice, Notice } from "@/components/
 
 type Mode = "login" | "register" | "reset" | "onboard";
 export function LoginView() {
-  const {t} = useLocale();
+  const {t, locale} = useLocale();
   const router = useRouter();
   const client = useQueryClient();
   const auth = useAuth();
@@ -48,7 +48,7 @@ export function LoginView() {
         saveToken("musician", session.token);
         await enterPortal();
       } else if (mode === "reset") {
-        await resetPassword(email);
+        await resetPassword(email, locale);
         setMessage("If an account exists, a password reset email has been sent.");
       } else if (mode === "register") {
         if (password !== confirmPassword) throw new AuthFailure("PASSWORD_MISMATCH", "Passwords do not match.");
@@ -56,7 +56,7 @@ export function LoginView() {
         setPassword("");
         setConfirmPassword("");
         setMode("onboard");
-        try {await sendVerification(); setMessage("Check your email to verify your account before opening a show.");}
+        try {await sendVerification(locale); setMessage("Check your email to verify your account before opening a show.");}
         catch {setMessage("Your account was created. You can resend the verification email from your portal.");}
       } else if (mode === "onboard") {
         await api("/musician/onboard", {method: "POST", role: "musician", body: json({stageName, slug})});

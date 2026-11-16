@@ -7,6 +7,7 @@ import {
   sendPasswordResetEmail, sendEmailVerification, signOut as firebaseSignOut,
   connectAuthEmulator, type Auth, type User,
 } from "firebase/auth";
+import type { Locale } from "@musica/contracts";
 
 export type Role = "guest" | "musician";
 export const isDemo = process.env.NEXT_PUBLIC_APP_ENV === "non-prod" && process.env.NEXT_PUBLIC_AUTH_MODE === "demo";
@@ -131,9 +132,15 @@ export async function registerMusician(email: string, password: string): Promise
   await createUserWithEmailAndPassword(await firebaseAuth("musician"), email, password);
 }
 
-export async function sendVerification(): Promise<void> {
+function setEmailLanguage(auth: Auth, locale: Locale): void {
+  // The Firebase project's default template is Spanish (Latin America).
+  auth.languageCode = locale === "es-AR" ? null : locale;
+}
+
+export async function sendVerification(locale: Locale = "es-AR"): Promise<void> {
   const auth = await firebaseAuth("musician");
   if (!auth.currentUser) throw new AuthFailure("UNAUTHORIZED", "Sign in to continue");
+  setEmailLanguage(auth, locale);
   await sendEmailVerification(auth.currentUser);
 }
 
@@ -144,8 +151,10 @@ export async function refreshMusician(): Promise<void> {
   await auth.currentUser.getIdToken(true);
 }
 
-export async function resetPassword(email: string): Promise<void> {
-  try {await sendPasswordResetEmail(await firebaseAuth("musician"), email);}
+export async function resetPassword(email: string, locale: Locale = "es-AR"): Promise<void> {
+  const auth = await firebaseAuth("musician");
+  setEmailLanguage(auth, locale);
+  try {await sendPasswordResetEmail(auth, email);}
   catch (error) {
     // Keep the recovery response neutral when email-enumeration protection is off.
     if (!(error && typeof error === "object" && "code" in error && error.code === "auth/user-not-found")) throw error;
