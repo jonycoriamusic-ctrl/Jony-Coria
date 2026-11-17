@@ -84,11 +84,11 @@ export function ReceiptPreview({
 export function RequestList() {
   const slug = useMusicianSlug();
   const query = useRequests();
-  const { t, money, date } = useLocale();
+  const { t, money, date, locale } = useLocale();
   if (query.isPending) return <Loading />;
   return (
     <div className="mx-auto max-w-3xl">
-      <SectionTitle eyebrow="Musica a la carta" title={t("My requests")} />
+      <SectionTitle eyebrow={locale === "en" ? "Music Menu" : "Musica a la carta"} title={t("My requests")} />
       <ErrorNotice error={query.error} retry={() => query.refetch()} />
       {query.data?.length ? (
         <div className="space-y-3">
@@ -110,7 +110,7 @@ export function RequestList() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold">{money(r.amount)}</p>
+                <p className="text-sm font-semibold">{money(r.amount, r.market)}</p>
                 <ArrowUpRightIcon />
               </div>
             </Link>
@@ -144,7 +144,7 @@ export function RequestDetail({ id }: { id: string }) {
   const upload = useCommand<MusicRequest>();
   const { t, money } = useLocale();
   const [now, setNow] = useState(Date.now());
-  const [copied, setCopied] = useState<"alias" | "cbu" | null>(null);
+  const [copied, setCopied] = useState<"alias" | "cbu" | "payId" | null>(null);
   const [preview, setPreview] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [fileError, setFileError] = useState<unknown>();
@@ -158,9 +158,9 @@ export function RequestDetail({ id }: { id: string }) {
   const request = query.data;
   const slug = request.musicianSlug || currentSlug;
   const seconds = secondsRemaining(request.expiresAt, now);
-  const amount = money(request.amount);
+  const amount = money(request.amount, request.market);
   const active = ["held", "queued", "playing"].includes(request.status);
-  async function copyBankDetail(value: string, kind: "alias" | "cbu") {
+  async function copyBankDetail(value: string, kind: "alias" | "cbu" | "payId") {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
@@ -218,8 +218,8 @@ export function RequestDetail({ id }: { id: string }) {
           </div>
         )}
         <div className="my-6 space-y-2 border-y border-border py-5 text-sm">
-          {request.songPrice !== undefined && <p className="flex items-center justify-between"><span className="text-muted">{t("Song price")}</span><span>{money(request.songPrice)}</span></p>}
-          {request.type === "dedication" && request.dedicationSurcharge !== undefined && <p className="flex items-center justify-between"><span className="text-muted">{t("Dedication add-on")}</span><span>+ {money(request.dedicationSurcharge)}</span></p>}
+          {request.songPrice !== undefined && <p className="flex items-center justify-between"><span className="text-muted">{t("Song price")}</span><span>{money(request.songPrice, request.market)}</span></p>}
+          {request.type === "dedication" && request.dedicationSurcharge !== undefined && <p className="flex items-center justify-between"><span className="text-muted">{t("Dedication add-on")}</span><span>+ {money(request.dedicationSurcharge, request.market)}</span></p>}
           <p className="flex items-center justify-between border-t border-border pt-3"><span className="text-muted">{t("Total")}</span><strong className="text-2xl font-semibold">{amount}</strong></p>
         </div>
         {request.status === "held" ? (
@@ -236,10 +236,10 @@ export function RequestDetail({ id }: { id: string }) {
             </div>
             {isDemo && <Notice>{t("This is a demo. Do not transfer money.")}</Notice>}
             <h3 className="mb-2 mt-7 text-lg font-semibold">
-              {t("Pay by bank transfer")}
+              {request.market === "AU" ? t("Pay with PayID") : t("Pay by bank transfer")}
             </h3>
             <p className="mb-6 text-sm leading-6 text-muted">
-              {t("Transfer the exact amount, then let the musician know.")}
+              {request.market === "AU" ? t("Send the exact amount to this PayID. Check the account holder in your banking app, then let the musician know.") : t("Transfer the exact amount, then let the musician know.")}
             </p>
             <div className="space-y-4 rounded-card bg-surface-subtle p-5">
               <div>
@@ -248,7 +248,13 @@ export function RequestDetail({ id }: { id: string }) {
                   {request.accountName}
                 </p>
               </div>
-              <div>
+              {request.market === "AU" ? <div>
+                <p className="text-xs text-muted">PayID · {request.payIdType === "phone" ? t("Australian mobile") : t("Email")}</p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="break-all text-sm font-semibold">{request.payId}</p>
+                  <Button variant="ghost" onClick={() => copyBankDetail(request.payId || "", "payId")} aria-label={t("Copy PayID")} className="shrink-0 px-2">{copied === "payId" ? <Check size={17}/> : <Copy size={17}/>}</Button>
+                </div>
+              </div> : <div>
                 <p className="text-xs text-muted">{t("Transfer alias")}</p>
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <p className="break-all text-sm font-semibold">
@@ -263,8 +269,8 @@ export function RequestDetail({ id }: { id: string }) {
                     {copied === "alias" ? <Check size={17} /> : <Copy size={17} />}
                   </Button>
                 </div>
-              </div>
-              {request.cbu && (
+              </div>}
+              {request.market !== "AU" && request.cbu && (
                 <div>
                   <p className="text-xs text-muted">CBU</p>
                   <div className="mt-1 flex items-center justify-between gap-2">

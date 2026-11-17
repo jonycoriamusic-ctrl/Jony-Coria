@@ -33,10 +33,11 @@ Open <http://127.0.0.1:3001/ingresar> and choose **Crear cuenta**. This preview 
 
 - Guest song search/filter, standard requests and dedications, ten-minute reservation, transfer instructions, private receipt upload, transfer claim, own request status and cancellation before transfer.
 - Automatic queue entry on the guest’s “Ya transferí”, queue ordering, current performance, completion and direct-arrangement exceptions. Historical shows keep their requests visible.
-- Repertoire add/edit/availability and CSV preview/import; show creation with Argentina start time, automatic switching behind one reusable musician QR, repertoire/capacity edits, pause/resume/finish and QR download. A scheduled show remains available for 24 hours or until a later show starts; a finished show does not reopen an older one.
+- Repertoire add/edit/availability and CSV preview/import; show creation in the musician's selected time zone, automatic switching behind one reusable musician QR, repertoire/capacity edits, pause/resume/finish and QR download. A scheduled show remains available for 24 hours or until a later show starts; a finished show does not reopen an older one.
 - Public profile, avatar/banner upload, contact/social links, song price plus dedication add-on, and transfer alias. The guest sees the itemized dedication total before reservation and in the new request. Songs can be requested repeatedly while show capacity remains.
 - Firebase Email/Password registration, email verification, musician onboarding, recovery and profile setup in Firebase mode. The local demo retains only Jony's sample login.
 - Argentine Spanish plus English, Brazilian Portuguese, Italian and French interface dictionaries. Musician-entered content remains in its original language.
+- Argentina and Australia musician markets: ARS with alias/optional CBU, or AUD with PayID email/mobile. The musician market controls prices and payment details; visitor country only suggests the initial interface language. English interface and Australian print card use “Music Menu”. No bank transfer is verified by the app.
 - Pending feedback for commands and optimistic song availability with rollback; payment and capacity success require a server acknowledgment.
 
 ## Verification

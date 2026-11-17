@@ -66,7 +66,7 @@ function wrapLines(ctx: CanvasRenderingContext2D, value: string, maxWidth: numbe
   return lines;
 }
 
-function drawStageName(ctx: CanvasRenderingContext2D, name: string, width: number, headerHeight: number) {
+function drawStageName(ctx: CanvasRenderingContext2D, name: string, width: number, headerHeight: number, australian: boolean) {
   const title = name.trim().toLocaleUpperCase("es-AR") || "MÚSICA EN VIVO";
   let size = width === A6.width ? 100 : 126;
   let lines: string[] = [];
@@ -84,7 +84,7 @@ function drawStageName(ctx: CanvasRenderingContext2D, name: string, width: numbe
   ctx.font = `700 ${size}px Arial, sans-serif`;
   lines.forEach((line, index) => ctx.fillText(line, 82, firstY + index * lineHeight, width - 164));
   ctx.font = `600 ${width === A6.width ? 28 : 35}px Arial, sans-serif`;
-  ctx.fillText("M Ú S I C A   E N   V I V O", 84, subtitleY);
+  ctx.fillText(australian ? "L I V E   M U S I C" : "M Ú S I C A   E N   V I V O", 84, subtitleY);
 }
 
 function drawContacts(ctx: CanvasRenderingContext2D, profile: PublicProfile, wide: boolean) {
@@ -122,6 +122,7 @@ function drawContacts(ctx: CanvasRenderingContext2D, profile: PublicProfile, wid
 
 /** A show-independent print card. The URL is the exact value used by the dialog QR. */
 export async function renderQrPrintCard(profile: PublicProfile, url: string): Promise<PrintCard> {
+  const australian = profile.market === "AU";
   const wide = profile.socialLinks.filter((link) => socialHandle(link)).length > 4;
   const size = wide ? A5 : A6;
   const canvas = document.createElement("canvas");
@@ -156,10 +157,10 @@ export async function renderQrPrintCard(profile: PublicProfile, url: string): Pr
   ctx.fillStyle = "#fff";
   ctx.textAlign = "left";
   ctx.font = "700 43px Arial, sans-serif";
-  ctx.fillText("musica", 186, 107);
+  ctx.fillText(australian ? "music" : "musica", 186, 107);
   ctx.font = "400 27px Arial, sans-serif";
-  ctx.fillText("a  l a  c a r t a", 188, 145);
-  drawStageName(ctx, profile.stageName, size.width, headerHeight);
+  ctx.fillText(australian ? "m e n u" : "a  l a  c a r t a", 188, 145);
+  drawStageName(ctx, profile.stageName, size.width, headerHeight, australian);
 
   ctx.fillStyle = "#fff";
   ctx.beginPath();
@@ -168,10 +169,10 @@ export async function renderQrPrintCard(profile: PublicProfile, url: string): Pr
   ctx.fillStyle = "#090909";
   ctx.textAlign = "center";
   ctx.font = `700 ${wide ? 65 : 53}px Arial, sans-serif`;
-  ctx.fillText("Elegí la próxima canción", size.width / 2, wide ? 770 : 707, size.width - 140);
+  ctx.fillText(australian ? "Choose the next song" : "Elegí la próxima canción", size.width / 2, wide ? 770 : 707, size.width - 140);
   ctx.fillStyle = "#5e5e5e";
   ctx.font = `400 ${wide ? 35 : 29}px Arial, sans-serif`;
-  ctx.fillText("Escaneá y mirá la carta en vivo", size.width / 2, wide ? 825 : 755);
+  ctx.fillText(australian ? "Scan to see the live menu" : "Escaneá y mirá la carta en vivo", size.width / 2, wide ? 825 : 755);
 
   const qrSize = wide ? 850 : 630;
   const qrX = (size.width - qrSize) / 2;
@@ -189,7 +190,7 @@ export async function renderQrPrintCard(profile: PublicProfile, url: string): Pr
 
   ctx.fillStyle = "#111";
   ctx.font = `700 ${wide ? 42 : 33}px Arial, sans-serif`;
-  ctx.fillText("Un mismo QR para todos los shows", size.width / 2, wide ? 1990 : 1544, size.width - 170);
+  ctx.fillText(australian ? "One QR for every show" : "Un mismo QR para todos los shows", size.width / 2, wide ? 1990 : 1544, size.width - 170);
   drawContacts(ctx, profile, wide);
   return { canvas, pageWidth: size.pageWidth, pageHeight: size.pageHeight };
 }
@@ -205,7 +206,7 @@ export async function downloadQrPrintCard(profile: PublicProfile, url: string): 
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = objectUrl;
-  link.download = `musica-a-la-carta-${profile.slug}-qr-mesa.pdf`;
+  link.download = `${profile.market === "AU" ? "music-menu" : "musica-a-la-carta"}-${profile.slug}-table-qr.pdf`;
   document.body.append(link);
   link.click();
   link.remove();

@@ -155,6 +155,19 @@ test('Firebase emulator: real tokens, tenant isolation, transactional cap, good-
   scheduleNow+=86400001;
   const afterWindow=await request(scheduledApp).get(permanentQr).expect(200);
   assert.equal(afterWindow.body.show,null);assert.deepEqual(afterWindow.body.songs,[]);
+  const australian=(await request(scheduledApp).patch('/api/v1/musician/profile').set(auth(a.token)).send({market:'AU',timeZone:'Australia/Brisbane',standardPrice:1000,dedicationSurcharge:500,alias:'',payIdType:'email',payId:'artist@example.com',accountName:'Australian Artist'}).expect(200)).body;
+  assert.equal(australian.market,'AU');
+  const auShow=(await request(scheduledApp).post('/api/v1/musician/shows').set(auth(a.token)).send({title:'Brisbane show',venue:'Brisbane',date:new Date(scheduleNow-1000).toISOString(),capacity:2,songIds:[a.song.id]}).expect(201)).body;
+  await request(scheduledApp).post(`/api/v1/musician/shows/${auShow.id}/action`).set(auth(a.token)).send({action:'open'}).expect(200);
+  const auMenu=(await request(scheduledApp).get(permanentQr).expect(200)).body;
+  assert.equal(auMenu.profile.market,'AU');assert.equal(auMenu.profile.payId,undefined);assert.equal(auMenu.profile.alias,undefined);
+  const auGuest=await signIn();
+  const auResult=await request(scheduledApp).post('/api/v1/requests').set(auth(auGuest)).set('Idempotency-Key',randomUUID()).send({showId:auShow.id,songId:a.song.id,type:'standard',expectedPrice:1000});
+  assert.equal(auResult.status,201,JSON.stringify({error:auResult.body,profile:(await admin.db.collection('musicians').doc(a.profile.id).get()).data()?.activeShowId,show:(await admin.db.collection('shows').doc(auShow.id).get()).data()?.status,menu:auMenu.show?.id}));
+  const auRequest=auResult.body;
+  assert.equal(auRequest.market,'AU');assert.equal(auRequest.payId,'artist@example.com');
+  await request(scheduledApp).patch('/api/v1/musician/profile').set(auth(a.token)).send({payId:'new@example.com'}).expect(200);
+  assert.equal((await request(scheduledApp).get(`/api/v1/requests/${auRequest.id}`).set(auth(auGuest)).expect(200)).body.payId,'artist@example.com');
   // Legacy oversized catalogs must never be truncated by folder deletion.
   const largeFolder=(await request(app).post('/api/v1/musician/folders').set(auth(b.token)).send({name:'Legacy folder'}).expect(201)).body;
   const legacyCatalog=admin.db.collection('musicians').doc(b.profile.id).collection('catalogs').doc('initial').collection('songs');

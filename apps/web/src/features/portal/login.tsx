@@ -3,17 +3,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, LockKeyhole } from "lucide-react";
-import type { SessionResponse, DashboardResponse } from "@musica/contracts";
+import type { SessionResponse, DashboardResponse, Market } from "@musica/contracts";
 import { api, json, ApiFailure, saveToken } from "@/lib/api";
 import { isDemo, AuthFailure, signInMusician, registerMusician, resetPassword, sendVerification, signOutMusician } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
-import { Button, Field, PasswordField, ErrorNotice, Notice } from "@/components/ui";
+import { Button, Field, PasswordField, ErrorNotice, Notice, SelectField } from "@/components/ui";
 import { BrandMark } from "@/components/brand-mark";
 
 type Mode = "login" | "register" | "reset" | "onboard";
 export function LoginView() {
-  const {t, locale} = useLocale();
+  const {t, locale, suggestedMarket} = useLocale();
   const router = useRouter();
   const client = useQueryClient();
   const auth = useAuth();
@@ -22,6 +22,7 @@ export function LoginView() {
   const [password, setPassword] = useState(isDemo ? "musica-demo" : "");
   const [stageName, setStageName] = useState("");
   const [slug, setSlug] = useState("");
+  const [market, setMarket] = useState<Market | null>(null);
   const [slugEdited, setSlugEdited] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -60,7 +61,7 @@ export function LoginView() {
         try {await sendVerification(locale); setMessage("Check your email to verify your account before opening a show.");}
         catch {setMessage("Your account was created. You can resend the verification email from your portal.");}
       } else if (mode === "onboard") {
-        await api("/musician/onboard", {method: "POST", role: "musician", body: json({stageName, slug})});
+        await api("/musician/onboard", {method: "POST", role: "musician", body: json({stageName, slug, market: market ?? suggestedMarket})});
         await enterPortal("/portal/perfil");
       } else {
         await signInMusician(email, password);
@@ -77,7 +78,7 @@ export function LoginView() {
     <div className="relative hidden min-h-[530px] bg-surface-inverse p-9 text-inverse md:flex md:flex-col md:justify-between">
       <img src="/stage.svg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-60"/>
       <BrandMark light className="relative size-12"/>
-      <div className="relative"><p className="mb-3 text-xs uppercase tracking-[.18em] opacity-70">Musica a la carta</p><h1 className="text-4xl font-semibold leading-tight tracking-tight">{t("Your stage. Your music.")}</h1><p className="mt-5 text-sm leading-7 text-inverse/70">{t("Manage your show, one song at a time.")}</p></div>
+      <div className="relative"><p className="mb-3 text-xs uppercase tracking-[.18em] opacity-70">{locale === "en" ? "Music Menu" : "Musica a la carta"}</p><h1 className="text-4xl font-semibold leading-tight tracking-tight">{t("Your stage. Your music.")}</h1><p className="mt-5 text-sm leading-7 text-inverse/70">{t("Manage your show, one song at a time.")}</p></div>
     </div>
     <div className="p-7 sm:p-10">
       <div className="mb-7 flex size-12 items-center justify-center rounded-full bg-surface-hover"><LockKeyhole size={22}/></div>
@@ -94,6 +95,7 @@ export function LoginView() {
         {mode === "onboard" ? <>
           <Field label={t("Stage name")} autoComplete="nickname" value={stageName} onChange={(event) => { const value=event.target.value;setStageName(value);if(!slugEdited)setSlug(value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60).replace(/-$/,"")); }} required maxLength={80}/>
           <Field label={t("Public profile address")} hint={t("Use 3–60 lowercase letters, numbers or hyphens.")} value={slug} onChange={(event) => {setSlugEdited(true);setSlug(event.target.value.toLowerCase());}} required minLength={3} maxLength={60} pattern="[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]" autoCapitalize="none" autoCorrect="off"/>
+          <SelectField label={t("Country")} value={market ?? suggestedMarket} onChange={(value) => setMarket(value as Market)} options={[{value:"AR",label:t("Argentina")},{value:"AU",label:t("Australia")}]} />
         </> : <>
           <Field label={t("Email")} type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required/>
           {mode !== "reset" && <PasswordField key={mode} label={t("Password")} autoComplete={mode === "register" ? "new-password" : "current-password"} minLength={mode === "register" ? 8 : undefined} value={password} onChange={(event) => setPassword(event.target.value)} required/>}

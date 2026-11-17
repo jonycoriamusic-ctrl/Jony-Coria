@@ -67,15 +67,15 @@ export function Shell({ children }: { children: ReactNode }) {
           <Link
             href={guestMenu}
             className="flex items-center gap-2.5"
-            aria-label="Musica a la carta"
+            aria-label={locale === "en" ? "Music Menu" : "Musica a la carta"}
           >
             <span className="flex size-10 items-center justify-center rounded-full bg-action text-action-foreground">
               <BrandMark light className="size-10" />
             </span>
             <span className="text-lg font-semibold leading-[1.05] tracking-tight">
-              musica
+              {locale === "en" ? "music" : "musica"}
               <span className="block text-[11px] font-medium tracking-[.11em]">
-                a la carta
+                {locale === "en" ? "menu" : "a la carta"}
               </span>
             </span>
           </Link>
@@ -149,7 +149,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
       <footer className="mx-auto flex max-w-content items-center justify-between border-t border-border px-gutter py-7 text-xs text-muted">
         <span className="flex items-center gap-2">
-          <BrandMark className="size-5" /> Musica a la carta
+          <BrandMark className="size-5" /> {locale === "en" ? "Music Menu" : "Musica a la carta"}
         </span>
         <Link
           href={portal ? guestMenu : "/ingresar"}

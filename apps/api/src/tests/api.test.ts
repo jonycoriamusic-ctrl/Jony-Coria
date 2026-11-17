@@ -100,6 +100,26 @@ test('CBU is private, validated and snapshotted; public phone is removed',async(
   }finally{await f.close();}
 });
 
+test('Australian profile uses AUD PayID, keeps it private until reservation, and snapshots the payment details',async()=>{
+  const f=await fixture();try{
+    await request(f.app).patch('/api/v1/musician/profile').set(f.auth(f.musician)).send({market:'AU',standardPrice:1000,dedicationSurcharge:500,payIdType:'email',payId:'music@example.com'}).expect(409);
+    await request(f.app).post('/api/v1/musician/shows/show-tonight/action').set(f.auth(f.musician)).send({action:'finish'}).expect(200);
+    await request(f.app).patch('/api/v1/musician/profile').set(f.auth(f.musician)).send({market:'AU',standardPrice:1000,dedicationSurcharge:500,payIdType:'phone',payId:'0412345678',accountName:'Australian Artist',alias:'',timeZone:'Australia/Brisbane'}).expect(200);
+    const invalid=await request(f.app).patch('/api/v1/musician/profile').set(f.auth(f.musician)).send({payId:'123'}).expect(422);
+    assert.equal(invalid.body.error.code,'INVALID_PAYID');
+    const show=(await request(f.app).post('/api/v1/musician/shows').set(f.auth(f.musician)).send({title:'Brisbane night',venue:'Brisbane',date:new Date().toISOString(),capacity:3,songIds:['song-1']}).expect(201)).body;
+    await request(f.app).post(`/api/v1/musician/shows/${show.id}/action`).set(f.auth(f.musician)).send({action:'open'}).expect(200);
+    const menu=(await request(f.app).get('/api/v1/public/qr/jony').expect(200)).body;
+    assert.equal(menu.profile.market,'AU');assert.equal(menu.profile.timeZone,'Australia/Brisbane');assert.equal(menu.profile.payId,undefined);assert.equal(menu.profile.alias,undefined);
+    const guest=await f.guest();
+    const held=(await request(f.app).post('/api/v1/requests').set(f.auth(guest)).set('Idempotency-Key',crypto.randomUUID()).send({showId:show.id,songId:'song-1',type:'dedication',dedication:'For Sam',expectedPrice:1500}).expect(201)).body;
+    assert.equal(held.market,'AU');assert.equal(held.amount,1500);assert.equal(held.payId,'0412345678');assert.equal(held.payIdType,'phone');
+    await request(f.app).patch('/api/v1/musician/profile').set(f.auth(f.musician)).send({payIdType:'email',payId:'new@example.com'}).expect(200);
+    const saved=(await request(f.app).get(`/api/v1/requests/${held.id}`).set(f.auth(guest)).expect(200)).body;
+    assert.equal(saved.payId,'0412345678');assert.equal(saved.amount,1500);
+  }finally{await f.close();}
+});
+
 test('legacy total price migrates to an add-on without changing the displayed total',()=>{
   const state=seedState();const profile=state.profiles[0] as typeof state.profiles[number]&{dedicationPrice?:number};
   delete (profile as Partial<typeof profile>).dedicationSurcharge;profile.dedicationPrice=450000;

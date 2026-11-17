@@ -1,9 +1,10 @@
 import { createHash,randomUUID } from 'node:crypto';
 import type { Firestore,DocumentSnapshot,Transaction } from 'firebase-admin/firestore';
 import type { Auth } from 'firebase-admin/auth';
+import { marketOf, timeZoneOf } from '@musica/contracts';
 import type { CreateRequestInput,DashboardResponse,MenuResponse,MusicianProfile,ProfileInput,ShowInput,SongInput,SongFolder,MusicRequest,Show,Song } from '@musica/contracts';
 import type { MusicApplication } from '../application/ports.js';
-import { assertMusician,DomainError,type Actor,type StoredRequest,type StoredShow,type StoredSong } from '../domain/model.js';
+import { assertMusician,isValidPayId,paymentReady,DomainError,type Actor,type StoredRequest,type StoredShow,type StoredSong } from '../domain/model.js';
 
 type ProfileDoc=Omit<MusicianProfile,'dedicationSurcharge'>&{dedicationSurcharge?:number;dedicationPrice?:number;activeShowId:string|null;catalogVersion:string;enabled:boolean;folders?:SongFolder[];songCount?:number};
 type ShowDoc=StoredShow&{nextQueueRank:number;playingRequestId:string|null;songCounts:Record<string,number>};
@@ -14,7 +15,7 @@ function identifier(value:string) {if (!/^[a-zA-Z0-9_-]{1,128}$/.test(value)) th
 function data<T>(snap:DocumentSnapshot,code='NOT_FOUND'):T {if (!snap.exists) throw new DomainError(code,code==='PROFILE_REQUIRED'?'Completá tu perfil para continuar.':'No encontramos ese recurso.',404);return snap.data() as T;}
 function surcharge(p:ProfileDoc):number {return p.dedicationSurcharge??Math.max(0,(p.dedicationPrice??p.standardPrice)-p.standardPrice);}
 function pricingReview(p:ProfileDoc):boolean {return p.dedicationSurcharge===undefined&&p.dedicationPrice!==undefined&&p.dedicationPrice<p.standardPrice;}
-function profileDto(p:ProfileDoc):MusicianProfile {return {id:p.id,slug:p.slug,stageName:p.stageName,bio:p.bio,location:p.location,avatarUrl:p.avatarUrl,bannerUrl:p.bannerUrl,publicEmail:p.publicEmail,whatsapp:p.whatsapp,website:p.website,socialLinks:p.socialLinks,standardPrice:p.standardPrice,dedicationSurcharge:surcharge(p),pricingReviewRequired:pricingReview(p),version:p.version,alias:p.alias,cbu:p.cbu??'',accountName:p.accountName};}
+function profileDto(p:ProfileDoc):MusicianProfile {return {id:p.id,slug:p.slug,stageName:p.stageName,bio:p.bio,location:p.location,avatarUrl:p.avatarUrl,bannerUrl:p.bannerUrl,publicEmail:p.publicEmail,whatsapp:p.whatsapp,website:p.website,socialLinks:p.socialLinks,standardPrice:p.standardPrice,dedicationSurcharge:surcharge(p),pricingReviewRequired:pricingReview(p),version:p.version,alias:p.alias,cbu:p.cbu??'',accountName:p.accountName,market:marketOf(p.market),timeZone:timeZoneOf(p.market,p.timeZone),payId:p.payId??'',payIdType:p.payIdType};}
 function showDto(s:ShowDoc):Show {const {musicianId:_owner,nextQueueRank:_rank,playingRequestId:_playing,songCounts:_counts,...show}=s;return show;}
 function requestDto(r:RequestDoc):MusicRequest {const {guestId:_guest,musicianId:_owner,capacityRetained:_capacity,receiptAssetId:_asset,...request}=r;return request;}
 function songDto(s:StoredSong):Song {return {id:s.id,title:s.title,artist:s.artist,folderId:s.folderId??null,enabled:s.enabled};}
@@ -56,7 +57,7 @@ export class FirebaseMusicApplication implements MusicApplication {
    let ready=false;
    if(scheduled?.status==='draft') {
     const verified=!!this.auth&&await this.auth.getUser(uid).then(user=>user.emailVerified).catch(()=>false);
-    if(verified&&!pricingReview(p)&&p.alias&&p.accountName&&p.standardPrice>=100) {
+    if(verified&&!pricingReview(p)&&paymentReady(profileDto(p))&&p.standardPrice>=100) {
      const catalog=await this.readCatalog(p);
      ready=catalog.some(song=>song.enabled&&scheduled.songIds.includes(song.id));
     }
@@ -84,14 +85,14 @@ export class FirebaseMusicApplication implements MusicApplication {
    return;
   }
  }
- async onboard(actor:Actor,input:{stageName:string;slug:string}) {
+ async onboard(actor:Actor,input:{stageName:string;slug:string;market?:'AR'|'AU'}) {
   this.invalidateViews(actor.musicianId);
   const uid=assertMusician(actor),profileRef=this.profileRef(uid),slugRef=this.db.collection('musicianSlugs').doc(input.slug);
   return this.db.runTransaction(async tx=>{
    const [existing,slug]=await Promise.all([tx.get(profileRef),tx.get(slugRef)]);
    if (existing.exists) return profileDto(data<ProfileDoc>(existing));
    if (slug.exists) throw new DomainError('SLUG_TAKEN','Ese enlace ya está en uso. Elegí otro.');
-   const p:ProfileDoc={id:uid,slug:input.slug,stageName:input.stageName,bio:'',location:'',avatarUrl:'',bannerUrl:'',publicEmail:'',whatsapp:'',website:'',socialLinks:[],standardPrice:0,dedicationSurcharge:0,alias:'',cbu:'',accountName:'',version:1,activeShowId:null,catalogVersion:'initial',enabled:true,folders:[],songCount:0};
+   const p:ProfileDoc={id:uid,slug:input.slug,stageName:input.stageName,bio:'',location:'',avatarUrl:'',bannerUrl:'',publicEmail:'',whatsapp:'',website:'',socialLinks:[],standardPrice:0,dedicationSurcharge:0,alias:'',cbu:'',accountName:'',market:marketOf(input.market),timeZone:timeZoneOf(input.market),payId:'',version:1,activeShowId:null,catalogVersion:'initial',enabled:true,folders:[],songCount:0};
    tx.create(profileRef,p);tx.create(slugRef,{musicianId:uid});this.audit(tx,actor,'profile.created',uid,uid);return profileDto(p);
   });
  }
@@ -120,7 +121,7 @@ export class FirebaseMusicApplication implements MusicApplication {
   p=await this.profile(registry.musicianId);
   const show=p.activeShowId?data<ShowDoc>(await this.showRef(p.activeShowId).get()):null;
   const catalog=show?await this.readCatalog(p):[];
-  const {alias:_alias,cbu:_cbu,accountName:_account,...publicProfile}=profileDto(p);
+  const {alias:_alias,cbu:_cbu,accountName:_account,payId:_payId,payIdType:_payIdType,...publicProfile}=profileDto(p);
   return {demo:false,profile:publicProfile,folders:p.folders??[],show:show?showDto(show):null,songs:catalog.filter(s=>s.enabled&&!!show&&show.songIds.includes(s.id)).map(s=>({...songDto(s),available:show?.status==='open'&&show.occupiedCount<show.capacity,requestCount:show?.songCounts[s.id]||0})),remaining:show?Math.max(0,show.capacity-show.occupiedCount):0,serverTime:new Date(this.now()).toISOString()};
   });
  }
@@ -167,7 +168,7 @@ export class FirebaseMusicApplication implements MusicApplication {
    const song=data<StoredSong>(songSnap);if(!song.enabled||!show.songIds.includes(song.id))throw new DomainError('SONG_UNAVAILABLE','Esta canción no está disponible.');
    if(show.occupiedCount>=show.capacity)throw new DomainError('CAPACITY_FULL','Se completaron los lugares de esta noche.');
    const dedicationSurcharge=input.type==='dedication'?surcharge(p):0,amount=p.standardPrice+dedicationSurcharge;if(input.expectedPrice!==amount)throw new DomainError('PRICE_CHANGED','El precio cambió. Revisá el nuevo total.');
-   const r:RequestDoc={id:requestRef.id,musicianId:p.id,guestId:actor.id,showId:show.id,songId:song.id,songTitle:song.title,artist:song.artist,musicianSlug:p.slug,musicianName:p.stageName,guestName:input.guestName||'Invitado',type:input.type,dedication:input.type==='dedication'?input.dedication!.trim():'',amount,songPrice:p.standardPrice,dedicationSurcharge,status:'held',createdAt:new Date(this.now()).toISOString(),expiresAt:new Date(this.now()+600000).toISOString(),claimedAt:null,confirmedAt:null,receiptUrl:null,queueRank:0,version:1,capacityRetained:true,alias:p.alias,cbu:p.cbu??'',accountName:p.accountName};
+   const r:RequestDoc={id:requestRef.id,musicianId:p.id,guestId:actor.id,showId:show.id,songId:song.id,songTitle:song.title,artist:song.artist,musicianSlug:p.slug,musicianName:p.stageName,guestName:input.guestName||'Invitado',type:input.type,dedication:input.type==='dedication'?input.dedication!.trim():'',amount,songPrice:p.standardPrice,dedicationSurcharge,status:'held',createdAt:new Date(this.now()).toISOString(),expiresAt:new Date(this.now()+600000).toISOString(),claimedAt:null,confirmedAt:null,receiptUrl:null,queueRank:0,version:1,capacityRetained:true,alias:p.alias,cbu:p.cbu??'',accountName:p.accountName,market:marketOf(p.market),...(marketOf(p.market)==='AU'?{payId:p.payId,payIdType:p.payIdType}:{})};
    tx.create(requestRef,r);tx.set(guard,{requestId:r.id,guestId:actor.id,showId:show.id});tx.create(idem,{fingerprint,requestId:r.id,guestId:actor.id,createdAt:r.createdAt});tx.update(showRef,{occupiedCount:show.occupiedCount+1,version:show.version+1,songCounts:{...show.songCounts,[song.id]:(show.songCounts[song.id]||0)+1}});this.publicSignal(tx,p.slug,{...show,occupiedCount:show.occupiedCount+1});this.audit(tx,actor,'request.reserved',r.id,p.id);return requestDto(r);
   });
  }
@@ -193,7 +194,7 @@ export class FirebaseMusicApplication implements MusicApplication {
   });
  }
  async updateProfile(actor:Actor,input:Partial<ProfileInput>) {
-  this.invalidateViews(actor.musicianId);const uid=assertMusician(actor);return this.db.runTransaction(async tx=>{const ref=this.profileRef(uid),p=data<ProfileDoc>(await tx.get(ref),'PROFILE_REQUIRED');version(input.version,p.version);const previousSurcharge=surcharge(p),wasConflict=pricingReview(p),{version:_v,...updates}=input;Object.assign(p,updates);p.cbu??='';delete (p as ProfileDoc&{phone?:string}).phone;if(input.dedicationSurcharge!==undefined||!wasConflict){p.dedicationSurcharge??=previousSurcharge;delete p.dedicationPrice;}if(p.standardPrice+surcharge(p)>100000000)throw new DomainError('INVALID_PRICE','El total supera el máximo permitido.',422);p.version++;tx.set(ref,p);this.publicSignal(tx,p.slug);this.audit(tx,actor,'profile.updated',uid,uid);return profileDto(p);});}
+  this.invalidateViews(actor.musicianId);const uid=assertMusician(actor);return this.db.runTransaction(async tx=>{const ref=this.profileRef(uid),p=data<ProfileDoc>(await tx.get(ref),'PROFILE_REQUIRED');version(input.version,p.version);const previousSurcharge=surcharge(p),wasConflict=pricingReview(p),previousMarket=marketOf(p.market),nextMarket=marketOf(input.market??p.market);if(nextMarket!==previousMarket&&p.activeShowId)throw new DomainError('ACTIVE_SHOW_MARKET','Finish the active show before changing country.',422);if(nextMarket!==previousMarket&&(input.standardPrice===undefined||input.dedicationSurcharge===undefined))throw new DomainError('PRICE_REVIEW_REQUIRED','Set prices in the new currency.',422);if(input.timeZone&&timeZoneOf(nextMarket,input.timeZone)!==input.timeZone)throw new DomainError('INVALID_TIME_ZONE','Choose a time zone in your country.',422);const {version:_v,...updates}=input;Object.assign(p,updates);p.market=nextMarket;p.timeZone=input.timeZone??timeZoneOf(nextMarket,nextMarket===previousMarket?p.timeZone:undefined);if(p.payId&&!isValidPayId(p.payId,p.payIdType))throw new DomainError('INVALID_PAYID','Enter a valid PayID email or Australian mobile number.',422);if(p.activeShowId&&!paymentReady(profileDto(p)))throw new DomainError('PROFILE_INCOMPLETE','Complete payment details before changing an active profile.',422);p.cbu??='';delete (p as ProfileDoc&{phone?:string}).phone;if(input.dedicationSurcharge!==undefined||!wasConflict){p.dedicationSurcharge??=previousSurcharge;delete p.dedicationPrice;}if(p.standardPrice+surcharge(p)>100000000)throw new DomainError('INVALID_PRICE','El total supera el máximo permitido.',422);p.version++;tx.set(ref,p);this.publicSignal(tx,p.slug);this.audit(tx,actor,'profile.updated',uid,uid);return profileDto(p);});}
  async saveSong(actor:Actor,input:Partial<SongInput>,id?:string) {
   this.invalidateViews(actor.musicianId);
   const uid=assertMusician(actor);
@@ -259,7 +260,7 @@ export class FirebaseMusicApplication implements MusicApplication {
     const catalog=await tx.get(this.catalog(p).where('enabled','==',true).limit(2000));
     if(actor.emailVerified!==true)throw new DomainError('EMAIL_NOT_VERIFIED','Verificá tu email antes de abrir el show.',403);
     if(pricingReview(p))throw new DomainError('PRICING_REVIEW_REQUIRED','Revisá el adicional por dedicatoria antes de recibir nuevos pedidos.',422);
-    if(!p.alias||!p.accountName||p.standardPrice<100)throw new DomainError('PROFILE_INCOMPLETE','Completá precios y datos de transferencia antes de abrir el show.',422);
+    if(!paymentReady(profileDto(p))||p.standardPrice<100)throw new DomainError('PROFILE_INCOMPLETE','Completá precios y datos de transferencia antes de abrir el show.',422);
     if(!p.enabled||s.status==='finished')throw new DomainError('SHOW_CLOSED','Este show no puede abrirse.');if(p.activeShowId&&p.activeShowId!==id)throw new DomainError('ACTIVE_SHOW_EXISTS','Ya tenés un show activo. Finalizalo antes de abrir otro.');if(!catalog.docs.some(d=>s.songIds.includes(d.id)))throw new DomainError('EMPTY_CATALOG','Agregá canciones antes de abrir el show.');s.status='open';
    } else if(action==='pause'){if(!['open','paused'].includes(s.status))throw new DomainError('INVALID_STATE','Este show no está abierto.');s.status='paused';}
    else if(action==='close'){if(!['open','paused','closed'].includes(s.status))throw new DomainError('INVALID_STATE','Este show no está activo.');s.status='closed';}

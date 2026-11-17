@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { DateTime } from "luxon";
+import { timeZoneOf } from "@musica/contracts";
 import type { Show, Song, DashboardResponse, MusicianProfile } from "@musica/contracts";
 import {
   Plus,
@@ -31,26 +33,29 @@ import {
   Empty,
   cx,
 } from "@/components/ui";
-function argentinaDateTime(value: string | Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23"}).formatToParts(new Date(value));
-  const part = (type: string) => parts.find(item => item.type === type)?.value ?? "";
-  return {day: `${part("year")}-${part("month")}-${part("day")}`, time: `${part("hour")}:${part("minute")}`};
+function localShowDateTime(value: string | Date, timeZone: string) {
+  const date = DateTime.fromJSDate(new Date(value), {zone: timeZone});
+  return {day: date.toFormat("yyyy-MM-dd"), time: date.toFormat("HH:mm")};
 }
 function ShowEditor({
   show,
   songs,
+  profile,
   onClose,
 }: {
   show?: Show;
   songs: Song[];
+  profile: MusicianProfile;
   onClose: () => void;
 }) {
   const { t } = useLocale();
   const command = useCommand();
+  const timeZone = timeZoneOf(profile.market, profile.timeZone);
   const [title, setTitle] = useState(show?.title || "");
   const [venue, setVenue] = useState(show?.venue || "");
-  const [day, setDay] = useState(() => argentinaDateTime(show?.date ?? new Date()).day);
-  const [startTime, setStartTime] = useState(() => show ? argentinaDateTime(show.date).time : "21:00");
+  const [day, setDay] = useState(() => localShowDateTime(show?.date ?? new Date(), timeZone).day);
+  const [startTime, setStartTime] = useState(() => show ? localShowDateTime(show.date, timeZone).time : "21:00");
+  const [dateError, setDateError] = useState("");
   const [capacity, setCapacity] = useState(show?.capacity || 20);
   const [selected, setSelected] = useState(
     show?.songIds || songs.filter((s) => s.enabled).map((s) => s.id),
@@ -61,6 +66,12 @@ function ShowEditor({
         className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
+          const instant = DateTime.fromISO(`${day}T${startTime}`, {zone: timeZone});
+          if (!instant.isValid || instant.toFormat("yyyy-MM-dd'T'HH:mm") !== `${day}T${startTime}`) {
+            setDateError(t("Choose a valid local date and time."));
+            return;
+          }
+          setDateError("");
           command.mutate(
             {
               path: `/musician/shows${show ? "/" + show.id : ""}`,
@@ -68,7 +79,7 @@ function ShowEditor({
               body: {
                 title,
                 venue,
-                date: `${day}T${startTime}:00-03:00`,
+                date: instant.toUTC().toISO(),
                 capacity,
                 songIds: selected,
                 ...(show ? { version: show.version } : {}),
@@ -101,7 +112,7 @@ function ShowEditor({
             onChange={(e) => setDay(e.target.value)}
           />
           <Field
-            label={t("Start time (Argentina)")}
+            label={`${t("Start time")} (${timeZone.replace("Australia/", "")})`}
             type="time"
             required
             value={startTime}
@@ -152,6 +163,7 @@ function ShowEditor({
               ))}
           </div>
         </fieldset>
+        {dateError && <p role="alert" className="text-sm text-foreground">{dateError}</p>}
         <ErrorNotice error={command.error} />
         <Button type="submit" className="w-full" busy={command.isPending}>
           {t("Save changes")}
@@ -263,7 +275,7 @@ export function QrDialog({
 export function ShowsView() {
   const query = useDashboard();
   const command = useCommand();
-  const { t, date } = useLocale();
+  const { t, date, locale } = useLocale();
   const [editing, setEditing] = useState<Show | true | null>(null);
   const [qr, setQr] = useState(false);
   const [finish, setFinish] = useState<Show | null>(null);
@@ -274,7 +286,7 @@ export function ShowsView() {
   const data = query.data;
   return (
     <>
-      <SectionTitle eyebrow="Musica a la carta" title={t("Shows")}>
+      <SectionTitle eyebrow={locale === "en" ? "Music Menu" : "Musica a la carta"} title={t("Shows")}>
         <div className="flex gap-2">
           <Button variant="secondary" aria-label={t("Your reusable QR")} onClick={() => setQr(true)}>
             <QrCode size={17} />
@@ -315,7 +327,7 @@ export function ShowsView() {
                     }[show.status],
                   )}
                 </span>
-                <span>{date(show.date, true)}</span>
+                <span>{date(show.date, true, timeZoneOf(data.profile.market, data.profile.timeZone))}</span>
               </div>
               <div className="p-6">
                 <h2 className="text-xl font-semibold tracking-tight">
@@ -411,6 +423,7 @@ export function ShowsView() {
         <ShowEditor
           show={editing === true ? undefined : editing}
           songs={data.songs}
+          profile={data.profile}
           onClose={() => setEditing(null)}
         />
       )}

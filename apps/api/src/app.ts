@@ -55,6 +55,7 @@ export function createApp(options: AppOptions) {
     res.set('Cache-Control',isPublic?'public, max-age=300':'private, no-store').type('webp').send(bytes);
   };
   api.get('/health', (_req,res) => res.json({status:'ok',mode:options.firebase?'firebase':'local-demo',environment:options.firebase?.appEnv||'non-prod',firebaseConfigured:!!options.firebase}));
+  api.get('/region', (_req,res) => res.json({country:null}));
   api.get('/auth/me',auth,(_req,res)=>res.json(actor(res)));
   if (demoService) {
   api.post('/demo/guest', async (_req,res) => res.status(201).json(await demoService.session('guest')));
@@ -83,7 +84,7 @@ export function createApp(options: AppOptions) {
     try { res.json(await service.attachAsset(actor(res),asset.id,'receipt',asset.file,id(req))); } catch(error) { await media.remove(asset.file); throw error; }
   });
   api.use('/musician',auth,musician);
-  api.post('/musician/onboard',async(req,res)=>{if(!service.onboard)throw new DomainError('DEMO_ONLY','El perfil demo ya está creado.',409);const input=z.object({stageName:z.string().trim().min(1).max(80),slug:z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]$/)}).strict().parse(req.body);res.status(201).json(await service.onboard(actor(res),input));});
+  api.post('/musician/onboard',async(req,res)=>{if(!service.onboard)throw new DomainError('DEMO_ONLY','El perfil demo ya está creado.',409);const input=z.object({stageName:z.string().trim().min(1).max(80),slug:z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]$/),market:z.enum(['AR','AU']).optional()}).strict().parse(req.body);res.status(201).json(await service.onboard(actor(res),input));});
   api.get('/musician/shows/:id/requests',async(req,res)=>res.json(await service.showRequests(actor(res),id(req))));
   api.get('/musician/dashboard',async (_req,res) => res.json(await service.dashboard(actor(res))));
   api.patch('/musician/profile',async (req,res) => res.json(await service.updateProfile(actor(res),profileSchema.partial().parse(req.body))));

@@ -55,6 +55,10 @@ export function ProfileCover({ profile }: { profile: PublicProfile }) {
 }
 export function ContactLinks({ profile }: { profile: PublicProfile }) {
   const { t } = useLocale();
+  const whatsappDigits = profile.whatsapp.replace(/\D/g, "");
+  const whatsappNumber = profile.market === "AU" && /^04\d{8}$/.test(whatsappDigits)
+    ? `61${whatsappDigits.slice(1)}`
+    : whatsappDigits;
   return (
     <div className="flex flex-wrap gap-2">
       {profile.socialLinks.map((link, i) => (
@@ -81,7 +85,7 @@ export function ContactLinks({ profile }: { profile: PublicProfile }) {
       )}
       {profile.whatsapp && (
         <ExternalLink
-          href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`}
+          href={`https://wa.me/${whatsappNumber}`}
         >
           WhatsApp
         </ExternalLink>

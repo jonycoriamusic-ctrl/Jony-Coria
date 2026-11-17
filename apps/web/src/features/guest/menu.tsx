@@ -102,8 +102,8 @@ export function ReserveDialog({
                     : "With a dedication",
                 )}
               </span>
-              <span className="mt-1 block font-semibold">{money(quotedPrice(menu.profile, value))}</span>
-              {value === "dedication" && <span className="mt-1 block text-xs leading-5 text-muted">{money(menu.profile.standardPrice)} + {money(menu.profile.dedicationSurcharge)}</span>}
+              <span className="mt-1 block font-semibold">{money(quotedPrice(menu.profile, value), menu.profile.market)}</span>
+              {value === "dedication" && <span className="mt-1 block text-xs leading-5 text-muted">{money(menu.profile.standardPrice, menu.profile.market)} + {money(menu.profile.dedicationSurcharge, menu.profile.market)}</span>}
             </button>
           ))}
         </div>
@@ -134,9 +134,9 @@ export function ReserveDialog({
         </div>
         <ErrorNotice error={mutation.error} />
         <div className="my-6 space-y-2 border-t border-border pt-5 text-sm">
-          <p className="flex justify-between"><span>{t("Song price")}</span><span>{money(menu.profile.standardPrice)}</span></p>
-          {type === "dedication" && <p className="flex justify-between"><span>{t("Dedication add-on")}</span><span>+ {money(menu.profile.dedicationSurcharge)}</span></p>}
-          <p className="flex justify-between border-t border-border pt-3 text-base font-semibold"><span>{t("Total")}</span><strong>{money(amount)}</strong></p>
+          <p className="flex justify-between"><span>{t("Song price")}</span><span>{money(menu.profile.standardPrice, menu.profile.market)}</span></p>
+          {type === "dedication" && <p className="flex justify-between"><span>{t("Dedication add-on")}</span><span>+ {money(menu.profile.dedicationSurcharge, menu.profile.market)}</span></p>}
+          <p className="flex justify-between border-t border-border pt-3 text-base font-semibold"><span>{t("Total")}</span><strong>{money(amount, menu.profile.market)}</strong></p>
         </div>
         <Button
           type="submit"
@@ -157,11 +157,11 @@ export function ReserveDialog({
 export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
   const slug = useMusicianSlug(explicitSlug);
   const query = useMenu(slug);
-  const { t, money } = useLocale();
+  const { t, money, locale } = useLocale();
   const [search, setSearch] = useState("");
   const [folderId, setFolderId] = useState<string | null>(null);
   const [selected, setSelected] = useState<MenuSong | null>(null);
-  if (!slug) return <div className="mx-auto max-w-2xl py-16 text-center"><BrandMark className="mx-auto mb-6 size-16"/><h1 className="text-4xl font-semibold tracking-tight">Musica a la carta</h1><p className="mt-5 text-lg text-muted">{t("Scan your musician’s QR to explore the menu.")}</p><Link href="/ingresar" className="mt-8 inline-flex rounded-control bg-action px-6 py-3 font-semibold text-action-foreground">{t("Musician access")}</Link></div>;
+  if (!slug) return <div className="mx-auto max-w-2xl py-16 text-center"><BrandMark className="mx-auto mb-6 size-16"/><h1 className="text-4xl font-semibold tracking-tight">{locale === "en" ? "Music Menu" : "Musica a la carta"}</h1><p className="mt-5 text-lg text-muted">{t("Scan your musician’s QR to explore the menu.")}</p><Link href="/ingresar" className="mt-8 inline-flex rounded-control bg-action px-6 py-3 font-semibold text-action-foreground">{t("Musician access")}</Link></div>;
   if (query.isPending) return <Loading />;
   if (query.error)
     return <ErrorNotice error={query.error} retry={() => query.refetch()} />;
@@ -201,7 +201,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
               {t(menu.show?.status === "open" ? "Live tonight" : "The show")}
             </span>
             <span className="text-xs tracking-wide">
-              {menu.show?.venue || "Musica a la carta"}
+              {menu.show?.venue || (locale === "en" ? "Music Menu" : "Musica a la carta")}
             </span>
           </div>
           <div className="mt-10 flex items-end justify-between">
@@ -320,7 +320,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
                         <>
                           <span className="text-muted">{t("From")} </span>
                           <span className="font-medium">
-                            {money(menu.profile.standardPrice)}
+                            {money(menu.profile.standardPrice, menu.profile.market)}
                           </span>
                         </>
                       ) : (
@@ -352,7 +352,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
                 </p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted">
                   <MapPin size={12} />
-                  {menu.profile.location || "Argentina"}
+                  {menu.profile.location || (menu.profile.market === "AU" ? t("Australia") : t("Argentina"))}
                 </p>
               </div>
             </div>
@@ -374,16 +374,16 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
               <p className="flex justify-between">
                 <span className="text-muted">{t("Song price")}</span>
                 <strong className="font-medium">
-                  {money(menu.profile.standardPrice)}
+                  {money(menu.profile.standardPrice, menu.profile.market)}
                 </strong>
               </p>
               <p className="flex justify-between">
                 <span className="text-muted">{t("Dedication add-on")}</span>
                 <strong className="font-medium">
-                  + {money(menu.profile.dedicationSurcharge)}
+                  + {money(menu.profile.dedicationSurcharge, menu.profile.market)}
                 </strong>
               </p>
-              <p className="flex justify-between border-t border-border pt-3 font-semibold"><span>{t("Dedication total")}</span><strong>{money(quotedPrice(menu.profile, "dedication"))}</strong></p>
+              <p className="flex justify-between border-t border-border pt-3 font-semibold"><span>{t("Dedication total")}</span><strong>{money(quotedPrice(menu.profile, "dedication"), menu.profile.market)}</strong></p>
             </div>
           </div>
           <div className="rounded-card bg-surface-subtle p-6">

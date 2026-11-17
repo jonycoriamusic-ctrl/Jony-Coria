@@ -7,7 +7,8 @@ const phone = text(30).refine(value => !value || /^[+\d\s()-]{5,30}$/.test(value
 export const profileSchema = z.object({
   stageName: required(80), bio: text(1000), location: text(120), publicEmail: z.union([z.literal(''), z.email()]),
   whatsapp: phone, website: link, socialLinks: z.array(z.object({ platform: required(40), url: link.refine(value => value.length > 0) }).strict()).max(10),
-  standardPrice: money, dedicationSurcharge: z.number().int().min(0).max(100000000), alias: required(50), cbu: z.union([z.literal(''), z.string().trim().regex(/^\d{22}$/, 'Ingresá un CBU de 22 dígitos.')]), accountName: required(120), version: z.number().int().positive().optional(),
+  standardPrice: money, dedicationSurcharge: z.number().int().min(0).max(100000000), alias: text(50), cbu: z.union([z.literal(''), z.string().trim().regex(/^\d{22}$/, 'Ingresá un CBU de 22 dígitos.')]), accountName: required(120),
+  market: z.enum(['AR', 'AU']), timeZone: z.enum(['America/Argentina/Buenos_Aires', 'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Perth', 'Australia/Hobart', 'Australia/Darwin']), payId: text(254), payIdType: z.enum(['email', 'phone']), version: z.number().int().positive().optional(),
 }).strict();
 export const songSchema = z.object({ title: required(150), artist: required(150), folderId: z.union([required(128), z.null()]).optional(), enabled: z.boolean().optional() }).strict();
 export const folderSchema = z.object({ name: required(60) }).strict();

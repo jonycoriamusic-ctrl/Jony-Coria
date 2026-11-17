@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { MusicianProfile, SocialLink } from "@musica/contracts";
+import { MARKET_SETTINGS, AU_TIME_ZONES, marketOf, type Market, type MusicianProfile, type SocialLink } from "@musica/contracts";
 import {
   Camera,
   Plus,
@@ -22,6 +22,7 @@ import {
   Loading,
   ErrorNotice,
   Notice,
+  SelectField,
   inputClass,
 } from "@/components/ui";
 import { Avatar } from "@/features/profile/profile-view";
@@ -30,6 +31,8 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
   const command = useCommand<MusicianProfile>();
   const media = useCommand<MusicianProfile>();
   const [draft, setDraft] = useState(profile);
+  const market = marketOf(draft.market);
+  const currency = MARKET_SETTINGS[market].currency;
   const [standard, setStandard] = useState(String(profile.standardPrice / 100));
   const [dedication, setDedication] = useState(
     String(profile.dedicationSurcharge / 100),
@@ -89,6 +92,10 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               alias: draft.alias,
               cbu: draft.cbu,
               accountName: draft.accountName,
+              market,
+              timeZone: draft.timeZone || MARKET_SETTINGS[market].defaultTimeZone,
+              payId: draft.payId || "",
+              payIdType: draft.payIdType || "email",
               version: draft.version,
             },
           },
@@ -218,6 +225,18 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
           </div>
         </section>
         <section className="rounded-card border border-border p-5 sm:p-7">
+          <h2 className="mb-5 text-lg font-semibold">{t("Country and currency")}</h2>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField label={t("Country")} value={market} onChange={(value) => {
+              const next = value as Market;
+              setDraft((prev) => ({...prev, market: next, timeZone: MARKET_SETTINGS[next].defaultTimeZone}));
+              setStandard(""); setDedication("0"); setSaved(false);
+            }} options={[{value:"AR",label:t("Argentina")},{value:"AU",label:t("Australia")}]}/>
+            {market === "AU" && <SelectField label={t("Show time zone")} value={draft.timeZone?.startsWith("Australia/") ? draft.timeZone : MARKET_SETTINGS.AU.defaultTimeZone} onChange={(value) => field("timeZone", value)} options={AU_TIME_ZONES.map(zone => ({value:zone,label:zone.replace("Australia/", "")}))}/>}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted">{t("Prices and payment details use the musician’s country, not the guest’s location.")}</p>
+        </section>
+        <section className="rounded-card border border-border p-5 sm:p-7">
           <h2 className="text-lg font-semibold">{t("Contact")}</h2>
           <p className="mb-6 mt-2 text-xs leading-5 text-muted">
             {t("These details will be visible to guests.")}
@@ -232,7 +251,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
             <Field
               label="WhatsApp"
               type="tel"
-              placeholder="+54…"
+              placeholder={`${MARKET_SETTINGS[market].phonePrefix}…`}
               value={draft.whatsapp}
               onChange={(e) => field("whatsapp", e.target.value)}
             />
@@ -317,7 +336,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
           {profile.pricingReviewRequired && <Notice>{t("Review your dedication price before accepting new requests.")}</Notice>}
           <div className="grid gap-5 sm:grid-cols-2">
             <Field
-              label={`${t("Standard price")} (ARS)`}
+              label={`${t("Standard price")} (${currency})`}
               type="number"
               min={1}
               step="0.01"
@@ -329,7 +348,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               }}
             />
             <Field
-              label={`${t("Dedication add-on")} (ARS)`}
+              label={`${t("Dedication add-on")} (${currency})`}
               type="number"
               min={0}
               step="0.01"
@@ -341,7 +360,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               }}
             />
           </div>
-          <p className="mt-4 text-sm text-muted">{t("Dedication total")}: {money(songCents)} + {money(dedicationCents)} = <strong className="text-foreground">{money(songCents + dedicationCents)}</strong></p>
+          <p className="mt-4 text-sm text-muted">{t("Dedication total")}: {money(songCents, market)} + {money(dedicationCents, market)} = <strong className="text-foreground">{money(songCents + dedicationCents, market)}</strong></p>
         </section>
         <section className="rounded-card border border-border p-5 sm:p-7">
           <h2 className="text-lg font-semibold">{t("Bank details")}</h2>
@@ -355,7 +374,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               onChange={(e) => field("accountName", e.target.value)}
               required
             />
-            <Field
+            {market === "AR" ? <><Field
               label={t("Transfer alias")}
               value={draft.alias}
               onChange={(e) => field("alias", e.target.value)}
@@ -369,7 +388,10 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               value={draft.cbu}
               onChange={(e) => field("cbu", e.target.value)}
               hint={t("Optional. Enter 22 digits.")}
-            />
+            /></> : <>
+              <SelectField label="PayID" value={draft.payIdType || "email"} onChange={(value) => field("payIdType", value)} options={[{value:"email",label:t("Email")},{value:"phone",label:t("Australian mobile")}]}/>
+              <Field label={draft.payIdType === "phone" ? t("Australian mobile") : t("PayID email")} type={draft.payIdType === "phone" ? "tel" : "email"} placeholder={draft.payIdType === "phone" ? "04… or +614…" : "name@example.com"} value={draft.payId || ""} onChange={(e) => field("payId", e.target.value)} required maxLength={254}/>
+            </>}
           </div>
           {isDemo && <p className="mt-4 text-xs font-medium">
             {t("This is a demo. Do not transfer money.")}

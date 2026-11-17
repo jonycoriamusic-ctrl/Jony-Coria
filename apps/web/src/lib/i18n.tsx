@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Locale } from "@musica/contracts";
+import { MARKET_SETTINGS, marketOf, type Locale, type Market } from "@musica/contracts";
 import { translations } from "./translations";
 
 export type { Locale } from "@musica/contracts";
@@ -28,7 +28,6 @@ export const LOCALE_OPTIONS: ReadonlyArray<{
 ];
 
 const LOCALE_STORAGE_KEY = "musica.locale";
-const TIME_ZONE = "America/Argentina/Buenos_Aires";
 type Variables = Record<string, string | number>;
 type DateOptions = Intl.DateTimeFormatOptions | boolean;
 
@@ -55,10 +54,11 @@ export function translate(
 
 interface LocaleContextValue {
   locale: Locale;
+  suggestedMarket: Market;
   setLocale: (locale: Locale) => void;
   t: (key: string, variables?: Variables) => string;
-  money: (centavos: number) => string;
-  date: (value: string | Date, options?: DateOptions) => string;
+  money: (cents: number, market?: Market) => string;
+  date: (value: string | Date, options?: DateOptions, timeZone?: string) => string;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -66,6 +66,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 export function LocaleProvider({ children }: { children: ReactNode }) {
   // A fixed server/client first render avoids hydration mismatch. Restore afterward.
   const [locale, updateLocale] = useState<Locale>("es-AR");
+  const [suggestedMarket, setSuggestedMarket] = useState<Market>("AR");
 
   useEffect(() => {
     try {
@@ -84,7 +85,31 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const localMarket = (): Market => {
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (zone?.startsWith("Australia/")) return "AU";
+      return navigator.language.toLowerCase().includes("-au") ? "AU" : "AR";
+    };
+    fetch("/api/v1/region", {signal: controller.signal})
+      .then((response) => response.ok ? response.json() : {})
+      .catch(() => ({}))
+      .then((result: {country?: string}) => {
+        if (controller.signal.aborted) return;
+        const market = result.country === "AR" || result.country === "AU" ? result.country : localMarket();
+        setSuggestedMarket(market);
+        try {
+          if (!isLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY))) updateLocale(market === "AU" ? "en" : "es-AR");
+        } catch { updateLocale(market === "AU" ? "en" : "es-AR"); }
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     document.documentElement.lang = locale;
+    document.title = locale === "en"
+      ? "Music Menu · Your night, your music"
+      : "Musica a la carta · Tu noche, tu música";
   }, [locale]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
@@ -98,22 +123,23 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<LocaleContextValue>(() => {
-    const moneyFormatter = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "ARS",
-      currencyDisplay: "code",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+    const viewerTimeZone = MARKET_SETTINGS[suggestedMarket].defaultTimeZone;
     return {
       locale,
+      suggestedMarket,
       setLocale,
       t: (key, variables) => translate(locale, key, variables),
-      money: (centavos) =>
-        Number.isSafeInteger(centavos)
-          ? moneyFormatter.format(centavos / 100)
+      money: (cents, market) =>
+        Number.isSafeInteger(cents)
+          ? new Intl.NumberFormat(locale === "en" ? "en-AU" : locale, {
+              style: "currency",
+              currency: MARKET_SETTINGS[marketOf(market)].currency,
+              currencyDisplay: "code",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(cents / 100)
           : "—",
-      date: (input, options = false) => {
+      date: (input, options = false, timeZone = viewerTimeZone) => {
         const value = input instanceof Date ? input : new Date(input);
         if (Number.isNaN(value.getTime())) return "—";
         const formatOptions: Intl.DateTimeFormatOptions =
@@ -129,11 +155,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
             : options;
         return new Intl.DateTimeFormat(locale, {
           ...formatOptions,
-          timeZone: TIME_ZONE,
+          timeZone,
         }).format(value);
       },
     };
-  }, [locale, setLocale]);
+  }, [locale, setLocale, suggestedMarket]);
 
   return (
     <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>

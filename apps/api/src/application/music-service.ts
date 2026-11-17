@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { CreateRequestInput, DashboardResponse, MenuResponse, MusicianProfile, ProfileInput, RequestStatus, ShowInput, SongInput } from '@musica/contracts';
-import { activeStatuses, assertMusician, DomainError, expireHolds, reconcileScheduledShows, publicRequest, publicShow, publicSong, type Actor, type DemoState, type StoredRequest } from '../domain/model.js';
+import { marketOf, timeZoneOf, type CreateRequestInput, type DashboardResponse, type MenuResponse, type MusicianProfile, type ProfileInput, type RequestStatus, type ShowInput, type SongInput } from '@musica/contracts';
+import { activeStatuses, assertMusician, DomainError, expireHolds, isValidPayId, paymentReady, reconcileScheduledShows, publicRequest, publicShow, publicSong, type Actor, type DemoState, type StoredRequest } from '../domain/model.js';
 import type { Repository } from './repository.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -26,7 +26,7 @@ export class MusicService {
     return this.run(s => {
       const profile = s.profiles.find(p => p.slug === slug);
       if (!profile) throw new DomainError('NOT_FOUND', 'No encontramos al músico.', 404);
-      const { alias: _alias, cbu: _cbu, accountName: _name, ...publicProfile } = profile;
+      const { alias: _alias, cbu: _cbu, accountName: _name, payId: _payId, payIdType: _payIdType, ...publicProfile } = profile;
       const show = s.shows.find(item => item.musicianId === profile.id && activeStatuses.has(item.status));
       const songs = s.songs.filter(song => song.musicianId === profile.id && song.enabled && !!show && show.songIds.includes(song.id)).map(song => {
         const requestCount = show ? s.requests.filter(r => r.showId === show.id && r.songId === song.id && r.capacityRetained).length : 0;
@@ -69,7 +69,7 @@ export class MusicService {
       if (s.requests.some(r => r.guestId === actor.id && r.showId === show.id && r.status === 'held')) throw new DomainError('ACTIVE_HOLD', 'Ya tenés una reserva pendiente. Revisá Mis pedidos.');
       const amount = profile.standardPrice + (input.type === 'dedication' ? profile.dedicationSurcharge : 0);
       if (input.expectedPrice !== amount) throw new DomainError('PRICE_CHANGED', 'El precio cambió. Revisá el nuevo total.');
-      const request: StoredRequest = { id: randomUUID(), musicianId: show.musicianId, guestId: actor.id, showId: show.id, songId: song.id, songTitle: song.title, artist: song.artist, musicianSlug: profile.slug, musicianName: profile.stageName, guestName: input.guestName || 'Invitado', type: input.type, dedication: input.type === 'dedication' ? input.dedication!.trim() : '', amount, songPrice: profile.standardPrice, dedicationSurcharge: input.type === 'dedication' ? profile.dedicationSurcharge : 0, status: 'held', createdAt: new Date(this.now()).toISOString(), expiresAt: new Date(this.now() + 10 * 60000).toISOString(), claimedAt: null, confirmedAt: null, receiptUrl: null, queueRank: 0, version: 1, capacityRetained: true, alias: profile.alias, cbu: profile.cbu, accountName: profile.accountName };
+      const request: StoredRequest = { id: randomUUID(), musicianId: show.musicianId, guestId: actor.id, showId: show.id, songId: song.id, songTitle: song.title, artist: song.artist, musicianSlug: profile.slug, musicianName: profile.stageName, guestName: input.guestName || 'Invitado', type: input.type, dedication: input.type === 'dedication' ? input.dedication!.trim() : '', amount, songPrice: profile.standardPrice, dedicationSurcharge: input.type === 'dedication' ? profile.dedicationSurcharge : 0, status: 'held', createdAt: new Date(this.now()).toISOString(), expiresAt: new Date(this.now() + 10 * 60000).toISOString(), claimedAt: null, confirmedAt: null, receiptUrl: null, queueRank: 0, version: 1, capacityRetained: true, alias: profile.alias, cbu: profile.cbu, accountName: profile.accountName, market: marketOf(profile.market), payId: marketOf(profile.market) === 'AU' ? profile.payId : undefined, payIdType: marketOf(profile.market) === 'AU' ? profile.payIdType : undefined };
       s.requests.push(request); show.occupiedCount++; show.version++;
       s.idempotency[identity] = { fingerprint, requestId: request.id };
       return publicRequest(request);
@@ -116,8 +116,17 @@ export class MusicService {
     return this.run(s => {
       const profile = s.profiles.find(p => p.id === musicianId)!;
       checkVersion(input.version, profile.version);
+      const previousMarket = marketOf(profile.market);
+      const nextMarket = marketOf(input.market ?? profile.market);
+      if (nextMarket !== previousMarket && s.shows.some(show => show.musicianId === musicianId && activeStatuses.has(show.status))) throw new DomainError('ACTIVE_SHOW_MARKET','Finish the active show before changing country.');
+      if (nextMarket !== previousMarket && (input.standardPrice === undefined || input.dedicationSurcharge === undefined)) throw new DomainError('PRICE_REVIEW_REQUIRED','Set prices in the new currency.',422);
+      if (input.timeZone && timeZoneOf(nextMarket, input.timeZone) !== input.timeZone) throw new DomainError('INVALID_TIME_ZONE','Choose a time zone in your country.',422);
       const { version: _version, ...updates } = input;
       Object.assign(profile, updates);
+      profile.market = nextMarket;
+      profile.timeZone = input.timeZone ?? timeZoneOf(nextMarket, nextMarket === previousMarket ? profile.timeZone : undefined);
+      if (profile.payId && !isValidPayId(profile.payId, profile.payIdType)) throw new DomainError('INVALID_PAYID','Enter a valid PayID email or Australian mobile number.',422);
+      if (s.shows.some(show => show.musicianId === musicianId && activeStatuses.has(show.status)) && !paymentReady(profile)) throw new DomainError('PROFILE_INCOMPLETE','Complete payment details before changing an active profile.',422);
       if (input.dedicationSurcharge !== undefined) { profile.pricingReviewRequired = false; delete (profile as MusicianProfile & {dedicationPrice?:number}).dedicationPrice; }
       if (profile.standardPrice + profile.dedicationSurcharge > 100000000) throw new DomainError('INVALID_PRICE','El total supera el máximo permitido.',422);
       profile.version++;
@@ -201,7 +210,9 @@ export class MusicService {
       const show = s.shows.find(item => item.id === id && item.musicianId === musicianId);
       if (!show) throw new DomainError('NOT_FOUND', 'No encontramos ese show.', 404);
       if (action === 'open' || action === 'resume') {
-        if (s.profiles.find(profile => profile.id === musicianId)?.pricingReviewRequired) throw new DomainError('PRICING_REVIEW_REQUIRED', 'Revisá los precios antes de abrir el show.',422);
+        const profile = s.profiles.find(profile => profile.id === musicianId)!;
+        if (profile.pricingReviewRequired) throw new DomainError('PRICING_REVIEW_REQUIRED', 'Revisá los precios antes de abrir el show.',422);
+        if (!paymentReady(profile)) throw new DomainError('PROFILE_INCOMPLETE','Complete prices and payment details before opening the show.',422);
         if (show.status === 'finished') throw new DomainError('SHOW_CLOSED', 'Creá otro show para empezar una nueva noche.');
         if (s.shows.some(item => item.musicianId === musicianId && item.id !== id && activeStatuses.has(item.status))) throw new DomainError('ACTIVE_SHOW_EXISTS', 'Ya tenés un show activo. Finalizalo antes de abrir otro.');
         if (!show.songIds.some(id => s.songs.some(song => song.id === id && song.enabled))) throw new DomainError('EMPTY_CATALOG', 'Agregá canciones antes de abrir el show.');

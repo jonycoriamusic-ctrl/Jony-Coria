@@ -290,7 +290,7 @@ export function DashboardView() {
                       </div>
                     </div>
                     <strong className="text-sm font-medium">
-                      {money(r.amount)}
+                      {money(r.amount, r.market)}
                     </strong>
                   </div>
                   {r.dedication && (

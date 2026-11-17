@@ -1,4 +1,4 @@
-import type { MusicianProfile, MusicRequest, Song, SongFolder, Show } from '@musica/contracts';
+import { marketOf, timeZoneOf, type MusicianProfile, type MusicRequest, type Song, type SongFolder, type Show } from '@musica/contracts';
 
 export interface Actor { id: string; role: 'guest' | 'musician'; musicianId?: string; emailVerified?: boolean }
 export interface StoredRequest extends MusicRequest { guestId: string; musicianId: string; capacityRetained: boolean }
@@ -19,6 +19,16 @@ export interface DemoState {
 export class DomainError extends Error {
   constructor(public code: string, message: string, public status = 409) { super(message); }
 }
+export function isValidPayId(value: string, type: MusicianProfile['payIdType']): boolean {
+  if (type === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+  if (type === 'phone') return /^(?:04\d{8}|\+614\d{8})$/.test(value.replace(/[\s()-]/g, ''));
+  return false;
+}
+export function paymentReady(profile: MusicianProfile): boolean {
+  return marketOf(profile.market) === 'AU'
+    ? !!profile.accountName && isValidPayId(profile.payId ?? '', profile.payIdType)
+    : !!profile.accountName && !!profile.alias;
+}
 function migrateDemoState(state: DemoState) {
   state.folders ??= {};
   for (const song of state.songs) {
@@ -27,6 +37,9 @@ function migrateDemoState(state: DemoState) {
   }
   // Upgrade persisted demo totals to an additive dedication price without changing historical request quotes.
   for (const profile of state.profiles) {
+    profile.market = marketOf(profile.market);
+    profile.timeZone = timeZoneOf(profile.market, profile.timeZone);
+    profile.payId ??= '';
     profile.cbu ??= '';
     delete (profile as MusicianProfile & {phone?:string}).phone;
     const legacy = profile as MusicianProfile & { dedicationPrice?: number; repeatLimit?: number };
@@ -84,7 +97,7 @@ export function reconcileScheduledShows(state: DemoState, now: number) {
     const latest = shows.filter(show => Number.isFinite(Date.parse(show.date)) && Date.parse(show.date) <= now && now < Date.parse(show.date) + SHOW_WINDOW_MS)
       .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
     const scheduled = latest?.status === 'finished' ? undefined : latest;
-    const ready = scheduled && (scheduled.status !== 'draft' || !profile.pricingReviewRequired && !!profile.alias && !!profile.accountName && profile.standardPrice >= 100 && scheduled.songIds.some(id => state.songs.some(song => song.id === id && song.musicianId === profile.id && song.enabled)));
+    const ready = scheduled && (scheduled.status !== 'draft' || !profile.pricingReviewRequired && paymentReady(profile) && profile.standardPrice >= 100 && scheduled.songIds.some(id => state.songs.some(song => song.id === id && song.musicianId === profile.id && song.enabled)));
     if (active && (now >= Date.parse(active.date) + SHOW_WINDOW_MS || latest && latest.id !== active.id && Date.parse(latest.date) > Date.parse(active.date) && (latest.status === 'finished' || ready))) {
       active.status = 'finished'; active.version++;
       for (const request of state.requests.filter(request => request.showId === active.id && request.status === 'held')) {request.status = 'expired';request.capacityRetained = false;request.version++;}

@@ -37,6 +37,10 @@ Each musician prints one QR pointing at `https://musicaalacarta.netlify.app/q/{s
 
 The public production database is intentionally empty until a real musician registers, verifies their email, completes profile/bank details, adds songs and schedules a show. A local Jony test record must never be copied into it.
 
+## Australia support
+
+The same production site serves Argentina and Australia. A small Netlify Edge Function provides a country hint at `/api/v1/region`; the browser uses it to suggest Spanish or English unless the visitor selected a language. The musician sets their operating country in onboarding/profile. That saved market determines ARS or AUD, alias/CBU or PayID, and the show time zone. No exchange conversion or PayID verification occurs. An Australian PayID is a bank-registered email or mobile number; musicians should confirm registration with their bank before opening a show. Existing Argentine Firestore profiles default to AR and need no migration. The permanent QR URL is unchanged; Australian print cards use “Music Menu” copy.
+
 ## Verification and remaining product checks
 
 1. The production Next/Netlify build passed and the uploaded Function bundle includes Linux x64 Sharp binaries. Prior type, unit, and Firebase emulator checks are recorded in the task. Repeat them when code changes warrant it.
