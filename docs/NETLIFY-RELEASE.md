@@ -1,4 +1,4 @@
-# Netlify Free release
+# Netlify release
 
 ## Current target
 
@@ -41,8 +41,8 @@ The public production database is intentionally empty until a real musician regi
 
 1. The production Next/Netlify build passed and the uploaded Function bundle includes Linux x64 Sharp binaries. Prior type, unit, and Firebase emulator checks are recorded in the task. Repeat them when code changes warrant it.
 2. The live homepage and `/ingresar` returned 200. `/api/v1/health` returned `firebase` / `prod` / 200 after removing the persistent site-level Firebase credential. `/api/v1/demo/guest` returned 404. An unknown musician QR page returned 200, and its API lookup returned a safe 404. Jony's demo is not in the production database.
-3. After the corrected manual deploy `6afb8f963e4e4b5a598fe801`, all 16 JavaScript/CSS assets referenced by the homepage returned 200. Chrome visibly rendered the homepage and the musician sign-in form. The Netlify badge remains because this project's Free-plan settings show removal locked behind a paid plan; the user chose to keep Netlify Free for now.
+3. After the corrected manual deploy `6afb8f963e4e4b5a598fe801`, all 16 JavaScript/CSS assets referenced by the homepage returned 200. Chrome visibly rendered the homepage and the musician sign-in form. On 2026-11-17, after the user upgraded the Netlify plan, the project's Powered by Netlify badge setting was turned off and verified as “not shown” in Project configuration > General. A fresh public page request had no badge iframe. Manual deploy `6afbad75d820ed9683bcac7e` removed the temporary mobile navigation offset and a 390 × 844 production browser check confirmed that the navigation reaches the viewport bottom.
 4. Register a real musician through the production form. Verify email, set the profile and bank alias, create a folder/song, schedule a show, and open its permanent QR from a phone. Submit a small test request and confirm it appears in that musician's queue. Do not use actual money during a test.
 5. Verify the guest QR responds to a capacity change and the next scheduled show. Review private receipt access, mobile layout and Argentina connectivity before printing a QR for tables.
 
-Netlify's synchronous Functions have a 6 MB buffered payload limit; binary uploads have roughly 4.5 MB of effective room after encoding. The app caps image uploads at 4 MiB. The Free plan has a fixed usage allowance and can pause when it is exhausted. [Netlify function limits](https://docs.netlify.com/build/functions/configuration/), [Netlify Free plan](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/).
+Netlify's synchronous Functions have a 6 MB buffered payload limit; binary uploads have roughly 4.5 MB of effective room after encoding. The app caps image uploads at 4 MiB. Check the team's current plan and credit usage in Netlify before relying on plan-specific limits. [Netlify function limits](https://docs.netlify.com/build/functions/configuration/), [Netlify plans](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/).

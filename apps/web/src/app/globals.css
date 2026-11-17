@@ -22,14 +22,3 @@
     var(--spacing-bottom-nav) + env(safe-area-inset-bottom, 0px)
   );
 }
-
-/* Netlify Free injects a fixed badge at the bottom right of public pages. */
-@media (max-width: 767px) {
-  body:has(#nl-badge-frame) .mobile-bottom-nav {
-    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  body:has(#nl-badge-frame) .mobile-nav-spacer {
-    margin-bottom: 4.5rem;
-  }
-}
