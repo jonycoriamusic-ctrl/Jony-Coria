@@ -14,6 +14,7 @@ import {
 import { useDashboard, useCommand } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
+import { publicMediaUrl } from "@/lib/public-media";
 import {
   Button,
   Field,
@@ -116,7 +117,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
           <h2 className="mb-5 text-lg font-semibold">{t("Public profile")}</h2>
           <div className="relative mb-5 h-36 overflow-hidden rounded-control bg-surface-inverse">
             <img
-              src={profile.bannerUrl || "/stage.svg"}
+              src={profile.bannerUrl ? publicMediaUrl(profile.bannerUrl, profile.version) : "/stage.svg"}
               alt=""
               className="h-full w-full object-cover"
             />

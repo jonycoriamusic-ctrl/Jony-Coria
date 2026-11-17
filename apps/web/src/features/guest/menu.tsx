@@ -23,6 +23,7 @@ import { quotedPrice } from "./domain/request";
 import { useMenu } from "@/lib/queries";
 import { useMusicianSlug, profileHref } from "@/lib/navigation";
 import { useLocale } from "@/lib/i18n";
+import { publicMediaUrl } from "@/lib/public-media";
 import {
   Button,
   Field,
@@ -189,7 +190,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
     <>
       <section className="relative mb-9 overflow-hidden rounded-sheet bg-surface-inverse text-inverse">
         <img
-          src={menu.profile.bannerUrl || "/stage.svg"}
+          src={menu.profile.bannerUrl ? publicMediaUrl(menu.profile.bannerUrl, menu.profile.version) : "/stage.svg"}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
         />

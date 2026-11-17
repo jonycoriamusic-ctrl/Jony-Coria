@@ -9,6 +9,8 @@ const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_FILE
   ?? join(homedir(), '.config/musicaalacarta/firebase-service-account.json');
 const cloudinaryPath = process.env.CLOUDINARY_ENV_FILE
   ?? join(root, '.env.cloudinary.local');
+const siteId = process.env.NETLIFY_SITE_ID ?? 'f553f3eb-8a97-416b-b6cf-8837d4aef5c5';
+if (!/^[a-f0-9-]{36}$/.test(siteId)) throw new Error('NETLIFY_SITE_ID must be a Netlify project UUID.');
 
 if (Number(process.versions.node.split('.')[0]) !== 22) {
   throw new Error('Manual Netlify releases require Node.js 22.');
@@ -28,7 +30,7 @@ if (!cloudinary.CLOUDINARY_API_KEY || !cloudinary.CLOUDINARY_API_SECRET) {
 
 const result = spawnSync('npx', [
   '--yes', 'netlify-cli@27.20.0', 'deploy', '--no-build', '--prod',
-  '--site', 'f553f3eb-8a97-416b-b6cf-8837d4aef5c5',
+  '--site', siteId,
   '--filter', '@musica/web',
   '--dir', 'apps/web/.netlify/static',
   '--secret-env', `FIREBASE_SERVICE_ACCOUNT_JSON=${JSON.stringify(serviceAccount)}`,

@@ -1,5 +1,6 @@
 import type { PublicProfile, SocialLink } from "@musica/contracts";
 import QRCode from "qrcode";
+import { publicMediaUrl } from "./public-media";
 
 type PrintCard = { canvas: HTMLCanvasElement; pageWidth: number; pageHeight: number };
 
@@ -138,7 +139,7 @@ export async function renderQrPrintCard(profile: PublicProfile, url: string): Pr
   ctx.fillRect(0, 0, size.width, headerHeight);
   if (profile.bannerUrl) {
     try {
-      const banner = await loadImage(new URL(profile.bannerUrl, location.origin).href);
+      const banner = await loadImage(new URL(publicMediaUrl(profile.bannerUrl, profile.version), location.origin).href);
       cover(ctx, banner, size.width, headerHeight);
     } catch {
       // A neutral header keeps the QR printable when an older banner is unavailable.

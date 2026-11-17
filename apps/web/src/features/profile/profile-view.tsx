@@ -12,17 +12,18 @@ import {
 import { usePublicProfile, useMenu } from "@/lib/queries";
 import { useMusicianSlug, menuHref } from "@/lib/navigation";
 import { useLocale } from "@/lib/i18n";
+import { publicMediaUrl } from "@/lib/public-media";
 import { Loading, ErrorNotice, ExternalLink, cx } from "@/components/ui";
 export function Avatar({
   profile,
   large = false,
 }: {
-  profile: Pick<PublicProfile, "avatarUrl" | "stageName">;
+  profile: Pick<PublicProfile, "avatarUrl" | "stageName" | "version">;
   large?: boolean;
 }) {
   return profile.avatarUrl ? (
     <img
-      src={profile.avatarUrl}
+      src={publicMediaUrl(profile.avatarUrl, profile.version)}
       alt={profile.stageName}
       className={cx(
         "shrink-0 rounded-full border-4 border-surface object-cover",
@@ -45,7 +46,7 @@ export function ProfileCover({ profile }: { profile: PublicProfile }) {
   return (
     <div className="relative h-44 overflow-hidden rounded-sheet bg-surface-inverse sm:h-64">
       <img
-        src={profile.bannerUrl || "/stage.svg"}
+        src={profile.bannerUrl ? publicMediaUrl(profile.bannerUrl, profile.version) : "/stage.svg"}
         alt=""
         className="h-full w-full object-cover"
       />

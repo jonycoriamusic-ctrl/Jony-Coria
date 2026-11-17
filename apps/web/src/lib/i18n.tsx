@@ -28,6 +28,7 @@ export const LOCALE_OPTIONS: ReadonlyArray<{
 ];
 
 const LOCALE_STORAGE_KEY = "musica.locale";
+const ENGLISH_SITE_HOST = "themusicmenu.netlify.app";
 type Variables = Record<string, string | number>;
 type DateOptions = Intl.DateTimeFormatOptions | boolean;
 
@@ -72,6 +73,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     try {
       const savedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
       if (isLocale(savedLocale)) updateLocale(savedLocale);
+      else if (window.location.hostname === ENGLISH_SITE_HOST) updateLocale("en");
     } catch {
       // Private browsing can deny storage. Language switching still works in memory.
     }
@@ -99,8 +101,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         const market = result.country === "AR" || result.country === "AU" ? result.country : localMarket();
         setSuggestedMarket(market);
         try {
-          if (!isLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY))) updateLocale(market === "AU" ? "en" : "es-AR");
-        } catch { updateLocale(market === "AU" ? "en" : "es-AR"); }
+          if (!isLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY))) {
+            updateLocale(window.location.hostname === ENGLISH_SITE_HOST || market === "AU" ? "en" : "es-AR");
+          }
+        } catch { updateLocale(window.location.hostname === ENGLISH_SITE_HOST || market === "AU" ? "en" : "es-AR"); }
       });
     return () => controller.abort();
   }, []);
