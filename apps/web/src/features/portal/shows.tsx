@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import type { Show, Song, DashboardResponse } from "@musica/contracts";
+import type { Show, Song, DashboardResponse, MusicianProfile } from "@musica/contracts";
 import {
   Plus,
   QrCode,
@@ -20,6 +20,7 @@ import {
 import { useDashboard, useCommand, useShowRequests } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
+import { downloadQrPrintCard } from "@/lib/qr-print-card";
 import {
   Button,
   Field,
@@ -160,11 +161,11 @@ function ShowEditor({
   );
 }
 export function QrDialog({
-  slug,
+  profile,
   show,
   onClose,
 }: {
-  slug: string;
+  profile: MusicianProfile;
   show: Show | null;
   onClose: () => void;
 }) {
@@ -174,8 +175,10 @@ export function QrDialog({
   const [error, setError] = useState<unknown>();
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
   useEffect(() => {
-    const href = `${location.origin}/q/${encodeURIComponent(slug)}`;
+    const href = `${location.origin}/q/${encodeURIComponent(profile.slug)}`;
     setUrl(href);
     setCopied(false);
     setCopyError(false);
@@ -187,7 +190,7 @@ export function QrDialog({
     })
       .then(setImage)
       .catch(setError);
-  }, [slug]);
+  }, [profile.slug]);
   return (
     <Modal title={t("Your reusable QR")} onClose={onClose}>
       <div className="text-center">
@@ -211,6 +214,7 @@ export function QrDialog({
         <p className="break-all text-xs text-muted">{url}</p>
         <ErrorNotice error={error} />
         {copyError && <p role="alert" className="mt-2 text-xs text-muted">{t("Could not copy link. You can select the URL above.")}</p>}
+        {downloadError && <p role="alert" className="mt-2 text-xs text-muted">{t("Could not create print card. Please try again.")}</p>}
         {isDemo && <p className="my-4 text-xs leading-5 text-muted">
           {t("This local QR works on this computer only. A public URL comes after deployment.")}
         </p>}
@@ -233,16 +237,24 @@ export function QrDialog({
             {copied ? <Check size={17} /> : <Copy size={17} />}
             {t(copied ? "Link copied" : "Copy link")}
           </Button>
-          {image && (
-            <a
-              href={image}
-              download="musica-a-la-carta-qr.png"
-              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-action px-6 py-3 text-sm font-semibold text-action-foreground"
-            >
-              <Download size={17} />
-              {t("Download QR")}
-            </a>
-          )}
+          <Button
+            disabled={!url || !image}
+            busy={downloading}
+            onClick={async () => {
+              setDownloading(true);
+              setDownloadError(false);
+              try {
+                await downloadQrPrintCard(profile, url);
+              } catch {
+                setDownloadError(true);
+              } finally {
+                setDownloading(false);
+              }
+            }}
+          >
+            <Download size={17} />
+            {t("Download print card")}
+          </Button>
         </div>
       </div>
     </Modal>
@@ -402,7 +414,7 @@ export function ShowsView() {
           onClose={() => setEditing(null)}
         />
       )}
-      {qr && <QrDialog slug={data.profile.slug} show={data.shows.find(show => show.id === data.activeShowId) ?? null} onClose={() => setQr(false)} />}
+      {qr && <QrDialog profile={data.profile} show={data.shows.find(show => show.id === data.activeShowId) ?? null} onClose={() => setQr(false)} />}
       {finish && (
         <Modal title={t("Finish show")} onClose={() => setFinish(null)}>
           <p className="text-lg font-semibold">{finish.title}</p>
