@@ -238,20 +238,28 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                 "socialLinks",
                 draft.socialLinks.map((item, i) => i === index ? { ...item, ...change } : item),
               );
-              return <div key={index} className="relative grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(12rem,14rem)_minmax(0,1fr)_auto] sm:border-0 sm:p-0">
-                <div className="col-span-2 space-y-2 sm:col-span-1">
+              const removeLink = () => field(
+                "socialLinks",
+                draft.socialLinks.filter((_, i) => i !== index),
+              );
+              return <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(12rem,14rem)_minmax(0,1fr)_auto] sm:border-0 sm:p-0">
+                <div className="col-span-2 sm:col-span-1">
+                  <div className="flex min-h-11 items-center justify-between sm:hidden">
+                    <span className="text-sm font-medium">{t("Platform")} {index + 1}</span>
+                    <Button variant="ghost" aria-label={t("Remove")} className="shrink-0 px-2" onClick={removeLink}><X size={18} /></Button>
+                  </div>
                   <SelectField
                     label={`${t("Platform")} ${index + 1}`}
                     value={selectedPlatform?.name ?? (isOther ? "__other__" : "")}
                     onChange={(value) => updateLink({ platform: value === "__other__" ? "Other" : value })}
                     options={socialOptions}
                     shortMenu
-                    className="min-w-0"
+                    className="mt-2 min-w-0 [&>span]:hidden sm:mt-0 sm:[&>span]:block"
                   />
                   {isOther && <input
                     aria-label={`${t("Custom platform")} ${index + 1}`}
                     placeholder={t("Custom platform")}
-                    className={inputClass}
+                    className={`${inputClass} mt-2`}
                     value={link.platform === "Other" ? "" : link.platform}
                     onChange={(e) => updateLink({ platform: e.target.value || "Other" })}
                     maxLength={40}
@@ -267,19 +275,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                   onChange={(e) => updateLink({ url: e.target.value })}
                   required={Boolean(link.platform)}
                 />
-                <Button
-                  variant="ghost"
-                  aria-label={t("Remove")}
-                  className="absolute right-2 top-2 px-2 sm:static sm:mt-6"
-                  onClick={() =>
-                    field(
-                      "socialLinks",
-                      draft.socialLinks.filter((_, i) => i !== index),
-                    )
-                  }
-                >
-                  <X size={18} />
-                </Button>
+                <div className="hidden sm:block"><Button variant="ghost" aria-label={t("Remove")} className="mt-6 px-2" onClick={removeLink}><X size={18} /></Button></div>
               </div>;
             })}
           </div>
