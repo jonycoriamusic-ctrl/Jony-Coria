@@ -238,13 +238,14 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                 "socialLinks",
                 draft.socialLinks.map((item, i) => i === index ? { ...item, ...change } : item),
               );
-              return <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(12rem,14rem)_minmax(0,1fr)_auto] sm:border-0 sm:p-0">
+              return <div key={index} className="relative grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(12rem,14rem)_minmax(0,1fr)_auto] sm:border-0 sm:p-0">
                 <div className="col-span-2 space-y-2 sm:col-span-1">
                   <SelectField
                     label={`${t("Platform")} ${index + 1}`}
                     value={selectedPlatform?.name ?? (isOther ? "__other__" : "")}
                     onChange={(value) => updateLink({ platform: value === "__other__" ? "Other" : value })}
                     options={socialOptions}
+                    shortMenu
                     className="min-w-0"
                   />
                   {isOther && <input
@@ -261,7 +262,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                   aria-label={`${t("Link")} ${index + 1}`}
                   type="url"
                   placeholder={selectedPlatform?.urlHint ?? "https://…"}
-                  className={`${inputClass} min-w-0 sm:mt-6`}
+                  className={`${inputClass} col-span-2 min-w-0 sm:col-span-1 sm:mt-6`}
                   value={link.url}
                   onChange={(e) => updateLink({ url: e.target.value })}
                   required={Boolean(link.platform)}
@@ -269,7 +270,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                 <Button
                   variant="ghost"
                   aria-label={t("Remove")}
-                  className="px-2 sm:mt-6"
+                  className="absolute right-2 top-2 px-2 sm:static sm:mt-6"
                   onClick={() =>
                     field(
                       "socialLinks",

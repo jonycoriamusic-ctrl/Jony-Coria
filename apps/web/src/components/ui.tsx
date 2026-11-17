@@ -93,6 +93,7 @@ export function SelectField({
   options,
   placeholder,
   compact = false,
+  shortMenu = false,
   className,
 }: {
   label: string;
@@ -101,6 +102,7 @@ export function SelectField({
   options: { value: string; label: string; icon?: ReactNode; group?: string }[];
   placeholder?: string;
   compact?: boolean;
+  shortMenu?: boolean;
   className?: string;
 }) {
   const portalContext = useContext(SelectPortalContext);
@@ -139,11 +141,11 @@ export function SelectField({
           <SelectPrimitive.Content
             position="popper"
             sideOffset={6}
-            collisionPadding={12}
-            className="z-50 min-w-[var(--radix-select-trigger-width)] max-w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-border bg-surface text-foreground shadow-overlay"
+            collisionPadding={16}
+            className="z-50 max-h-[calc(100dvh-2rem)] min-w-[var(--radix-select-trigger-width)] max-w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-border bg-surface text-foreground shadow-overlay"
           >
-            <SelectPrimitive.ScrollUpButton className="flex h-8 items-center justify-center text-muted"><ChevronUp size={16} /></SelectPrimitive.ScrollUpButton>
-            <SelectPrimitive.Viewport className="max-h-[min(45dvh,var(--radix-select-content-available-height))] p-1">
+            <SelectPrimitive.ScrollUpButton className={cx("flex items-center justify-center text-muted", shortMenu ? "h-6" : "h-8")}><ChevronUp size={16} /></SelectPrimitive.ScrollUpButton>
+            <SelectPrimitive.Viewport className={cx(shortMenu ? "max-h-[min(28dvh,var(--radix-select-content-available-height))]" : "max-h-[min(45dvh,var(--radix-select-content-available-height))]", "p-1")}>
               {groups.map((group) => (
                 <SelectPrimitive.Group key={group}>
                   {group && <SelectPrimitive.Label className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">{group}</SelectPrimitive.Label>}
@@ -161,7 +163,7 @@ export function SelectField({
                 </SelectPrimitive.Group>
               ))}
             </SelectPrimitive.Viewport>
-            <SelectPrimitive.ScrollDownButton className="flex h-8 items-center justify-center text-muted"><ChevronDown size={16} /></SelectPrimitive.ScrollDownButton>
+            <SelectPrimitive.ScrollDownButton className={cx("flex items-center justify-center text-muted", shortMenu ? "h-6" : "h-8")}><ChevronDown size={16} /></SelectPrimitive.ScrollDownButton>
           </SelectPrimitive.Content>
         </SelectPrimitive.Portal>
       </SelectPrimitive.Root>
