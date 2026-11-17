@@ -34,6 +34,7 @@ import {
   cx,
 } from "@/components/ui";
 import { Avatar } from "@/features/profile/profile-view";
+import { BrandMark } from "@/components/brand-mark";
 export function ReserveDialog({
   song,
   menu,
@@ -160,7 +161,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
   const [search, setSearch] = useState("");
   const [folderId, setFolderId] = useState<string | null>(null);
   const [selected, setSelected] = useState<MenuSong | null>(null);
-  if (!slug) return <div className="mx-auto max-w-2xl py-16 text-center"><Music2 className="mx-auto mb-6" size={36}/><h1 className="text-4xl font-semibold tracking-tight">Musica a la carta</h1><p className="mt-5 text-lg text-muted">{t("Scan your musician’s QR to explore the menu.")}</p><Link href="/ingresar" className="mt-8 inline-flex rounded-control bg-action px-6 py-3 font-semibold text-action-foreground">{t("Musician access")}</Link></div>;
+  if (!slug) return <div className="mx-auto max-w-2xl py-16 text-center"><BrandMark className="mx-auto mb-6 size-16"/><h1 className="text-4xl font-semibold tracking-tight">Musica a la carta</h1><p className="mt-5 text-lg text-muted">{t("Scan your musician’s QR to explore the menu.")}</p><Link href="/ingresar" className="mt-8 inline-flex rounded-control bg-action px-6 py-3 font-semibold text-action-foreground">{t("Musician access")}</Link></div>;
   if (query.isPending) return <Loading />;
   if (query.error)
     return <ErrorNotice error={query.error} retry={() => query.refetch()} />;

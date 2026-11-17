@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   },
   description:
     "Elegí una canción, dedicá un momento y disfrutá la música en vivo.",
+  manifest: "/site.webmanifest",
 };
 export default function RootLayout({
   children,

@@ -11,7 +11,6 @@ import {
   CalendarDays,
   ArrowUpRight,
   LogOut,
-  Disc3,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "@/lib/i18n";
@@ -22,6 +21,7 @@ import { useDashboard } from "@/lib/queries";
 import { useMusicianSlug, menuHref, profileHref, guestHref } from "@/lib/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { cx, Loading, ErrorNotice, Button, Notice, SelectField } from "./ui";
+import { BrandMark } from "./brand-mark";
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const portal = pathname.startsWith("/portal");
@@ -70,7 +70,7 @@ export function Shell({ children }: { children: ReactNode }) {
             aria-label="Musica a la carta"
           >
             <span className="flex size-10 items-center justify-center rounded-full bg-action text-action-foreground">
-              <Music2 size={22} />
+              <BrandMark light className="size-10" />
             </span>
             <span className="text-lg font-semibold leading-[1.05] tracking-tight">
               musica
@@ -149,7 +149,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
       <footer className="mx-auto flex max-w-content items-center justify-between border-t border-border px-gutter py-7 text-xs text-muted">
         <span className="flex items-center gap-2">
-          <Disc3 size={14} /> Musica a la carta
+          <BrandMark className="size-5" /> Musica a la carta
         </span>
         <Link
           href={portal ? guestMenu : "/ingresar"}

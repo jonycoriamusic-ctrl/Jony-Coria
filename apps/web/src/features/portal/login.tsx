@@ -2,13 +2,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Music2, LockKeyhole } from "lucide-react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import type { SessionResponse, DashboardResponse } from "@musica/contracts";
 import { api, json, ApiFailure, saveToken } from "@/lib/api";
 import { isDemo, AuthFailure, signInMusician, registerMusician, resetPassword, sendVerification, signOutMusician } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { Button, Field, PasswordField, ErrorNotice, Notice } from "@/components/ui";
+import { BrandMark } from "@/components/brand-mark";
 
 type Mode = "login" | "register" | "reset" | "onboard";
 export function LoginView() {
@@ -75,7 +76,7 @@ export function LoginView() {
   return <div className="mx-auto grid max-w-4xl overflow-hidden rounded-sheet border border-border md:grid-cols-2">
     <div className="relative hidden min-h-[530px] bg-surface-inverse p-9 text-inverse md:flex md:flex-col md:justify-between">
       <img src="/stage.svg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-60"/>
-      <Music2 className="relative" size={32}/>
+      <BrandMark light className="relative size-12"/>
       <div className="relative"><p className="mb-3 text-xs uppercase tracking-[.18em] opacity-70">Musica a la carta</p><h1 className="text-4xl font-semibold leading-tight tracking-tight">{t("Your stage. Your music.")}</h1><p className="mt-5 text-sm leading-7 text-inverse/70">{t("Manage your show, one song at a time.")}</p></div>
     </div>
     <div className="p-7 sm:p-10">

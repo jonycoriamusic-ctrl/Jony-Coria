@@ -1,0 +1,14 @@
+{
+  "name": "Musica a la carta",
+  "short_name": "Musica",
+  "description": "Elegí una canción, dedicá un momento y disfrutá la música en vivo.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {"src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

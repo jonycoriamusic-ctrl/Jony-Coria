@@ -15,3 +15,8 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
+
+[[headers]]
+  for = "/site.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
