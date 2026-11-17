@@ -98,13 +98,15 @@ export function SelectField({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; icon?: ReactNode; group?: string }[];
   placeholder?: string;
   compact?: boolean;
   className?: string;
 }) {
   const portalContext = useContext(SelectPortalContext);
   const [open, setOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
+  const groups = [...new Set(options.map((option) => option.group ?? ""))];
   useEffect(() => {
     if (!open || !portalContext) return;
     const close = () => setOpen(false);
@@ -128,7 +130,9 @@ export function SelectField({
             compact ? "min-h-11 min-w-17 rounded-full px-3 text-xs" : "min-h-12 w-full rounded-control px-4 text-base",
           )}
         >
-          <span className="min-w-0 flex-1 truncate"><SelectPrimitive.Value placeholder={placeholder ?? label} /></span>
+          <span className="min-w-0 flex-1 truncate"><SelectPrimitive.Value placeholder={placeholder ?? label}>
+            {selectedOption?.icon ? <span className="inline-flex items-center gap-2.5"><span aria-hidden="true" className="shrink-0">{selectedOption.icon}</span>{selectedOption.label}</span> : undefined}
+          </SelectPrimitive.Value></span>
           <SelectPrimitive.Icon className="shrink-0 text-muted"><ChevronDown size={compact ? 14 : 18} strokeWidth={1.8} /></SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
         <SelectPrimitive.Portal container={portalContext?.container ?? undefined}>
@@ -139,16 +143,22 @@ export function SelectField({
             className="z-50 min-w-[var(--radix-select-trigger-width)] max-w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-border bg-surface text-foreground shadow-overlay"
           >
             <SelectPrimitive.ScrollUpButton className="flex h-8 items-center justify-center text-muted"><ChevronUp size={16} /></SelectPrimitive.ScrollUpButton>
-            <SelectPrimitive.Viewport className="max-h-[min(60dvh,var(--radix-select-content-available-height))] p-1">
-              {options.map((option) => (
-                <SelectPrimitive.Item
-                  key={option.value}
-                  value={option.value === "" ? emptyOption : option.value}
-                  className="flex min-h-11 cursor-default select-none items-center justify-between gap-5 rounded-control px-3 py-2.5 text-sm leading-5 outline-none data-[highlighted]:bg-surface-hover data-[state=checked]:font-semibold"
-                >
-                  <SelectPrimitive.ItemText className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{option.label}</SelectPrimitive.ItemText>
-                  <SelectPrimitive.ItemIndicator className="shrink-0"><Check size={16} strokeWidth={2} /></SelectPrimitive.ItemIndicator>
-                </SelectPrimitive.Item>
+            <SelectPrimitive.Viewport className="max-h-[min(45dvh,var(--radix-select-content-available-height))] p-1">
+              {groups.map((group) => (
+                <SelectPrimitive.Group key={group}>
+                  {group && <SelectPrimitive.Label className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">{group}</SelectPrimitive.Label>}
+                  {options.filter((option) => (option.group ?? "") === group).map((option) => (
+                    <SelectPrimitive.Item
+                      key={option.value}
+                      value={option.value === "" ? emptyOption : option.value}
+                      className="flex min-h-11 cursor-default select-none items-center gap-3 rounded-control px-3 py-2.5 text-sm leading-5 outline-none data-[highlighted]:bg-surface-hover data-[state=checked]:font-semibold"
+                    >
+                      {option.icon && <span aria-hidden="true" className="shrink-0 text-lg">{option.icon}</span>}
+                      <SelectPrimitive.ItemText className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{option.label}</SelectPrimitive.ItemText>
+                      <SelectPrimitive.ItemIndicator className="ml-auto shrink-0"><Check size={16} strokeWidth={2} /></SelectPrimitive.ItemIndicator>
+                    </SelectPrimitive.Item>
+                  ))}
+                </SelectPrimitive.Group>
               ))}
             </SelectPrimitive.Viewport>
             <SelectPrimitive.ScrollDownButton className="flex h-8 items-center justify-center text-muted"><ChevronDown size={16} /></SelectPrimitive.ScrollDownButton>

@@ -10,11 +10,13 @@ import {
   Check,
   ImageIcon,
   Upload,
+  Globe2,
 } from "lucide-react";
 import { useDashboard, useCommand } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
 import { publicMediaUrl } from "@/lib/public-media";
+import { SOCIAL_PLATFORMS, socialPlatform } from "@/lib/social-platforms";
 import {
   Button,
   Field,
@@ -42,6 +44,16 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
   const dedicationCents = Math.round(Number(dedication) * 100);
   const [saved, setSaved] = useState(false);
   const [fileError, setFileError] = useState<unknown>();
+  const socialOptions = [
+    { value: "", label: t("Choose platform") },
+    ...SOCIAL_PLATFORMS.map(({ name, group, icon: Icon }) => ({
+      value: name,
+      label: name,
+      icon: <Icon size={20} aria-hidden="true" />,
+      group: t(group === "music" ? "Music platforms" : group === "social" ? "Social networks" : group === "messaging" ? "Messaging" : "Creator links"),
+    })),
+    { value: "__other__", label: t("Other platform"), icon: <Globe2 size={20} aria-hidden="true" />, group: t("Creator links") },
+  ];
   function field(key: keyof MusicianProfile, value: unknown) {
     setSaved(false);
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -86,7 +98,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               whatsapp: draft.whatsapp,
               website: draft.website,
               socialLinks: draft.socialLinks.filter(
-                (l) => l.platform.trim() && l.url.trim(),
+                (l) => l.platform.trim() && l.platform !== "Other" && l.url.trim(),
               ),
               standardPrice: Math.round(Number(standard) * 100),
               dedicationSurcharge: Math.round(Number(dedication) * 100),
@@ -262,43 +274,45 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
             {t("Social links")}
           </h3>
           <div className="space-y-3">
-            {draft.socialLinks.map((link, index) => (
-              <div key={index} className="flex flex-wrap gap-2 sm:flex-nowrap">
-                <input
-                  aria-label={`${t("Platform")} ${index + 1}`}
-                  placeholder="Instagram"
-                  className={`${inputClass} flex-1 sm:max-w-32`}
-                  value={link.platform}
-                  onChange={(e) =>
-                    field(
-                      "socialLinks",
-                      draft.socialLinks.map((item, i) =>
-                        i === index
-                          ? { ...item, platform: e.target.value }
-                          : item,
-                      ),
-                    )
-                  }
-                />
+            {draft.socialLinks.map((link, index) => {
+              const selectedPlatform = socialPlatform(link.platform);
+              const isOther = !!link.platform && !selectedPlatform;
+              const updateLink = (change: Partial<SocialLink>) => field(
+                "socialLinks",
+                draft.socialLinks.map((item, i) => i === index ? { ...item, ...change } : item),
+              );
+              return <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(12rem,14rem)_minmax(0,1fr)_auto] sm:border-0 sm:p-0">
+                <div className="col-span-2 space-y-2 sm:col-span-1">
+                  <SelectField
+                    label={`${t("Platform")} ${index + 1}`}
+                    value={selectedPlatform?.name ?? (isOther ? "__other__" : "")}
+                    onChange={(value) => updateLink({ platform: value === "__other__" ? "Other" : value })}
+                    options={socialOptions}
+                    className="min-w-0"
+                  />
+                  {isOther && <input
+                    aria-label={`${t("Custom platform")} ${index + 1}`}
+                    placeholder={t("Custom platform")}
+                    className={inputClass}
+                    value={link.platform === "Other" ? "" : link.platform}
+                    onChange={(e) => updateLink({ platform: e.target.value || "Other" })}
+                    maxLength={40}
+                    required
+                  />}
+                </div>
                 <input
                   aria-label={`${t("Link")} ${index + 1}`}
                   type="url"
-                  placeholder="https://…"
-                  className={`${inputClass} min-w-0 flex-[2]`}
+                  placeholder={selectedPlatform?.urlHint ?? "https://…"}
+                  className={`${inputClass} min-w-0 sm:mt-6`}
                   value={link.url}
-                  onChange={(e) =>
-                    field(
-                      "socialLinks",
-                      draft.socialLinks.map((item, i) =>
-                        i === index ? { ...item, url: e.target.value } : item,
-                      ),
-                    )
-                  }
+                  onChange={(e) => updateLink({ url: e.target.value })}
+                  required={Boolean(link.platform)}
                 />
                 <Button
                   variant="ghost"
                   aria-label={t("Remove")}
-                  className="px-2"
+                  className="px-2 sm:mt-6"
                   onClick={() =>
                     field(
                       "socialLinks",
@@ -308,8 +322,8 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                 >
                   <X size={18} />
                 </Button>
-              </div>
-            ))}
+              </div>;
+            })}
           </div>
           <Button
             variant="ghost"

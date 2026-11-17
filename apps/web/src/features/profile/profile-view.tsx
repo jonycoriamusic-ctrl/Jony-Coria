@@ -5,7 +5,6 @@ import {
   MapPin,
   Mail,
   Globe,
-  Instagram,
   ArrowUpRight,
   Music2,
 } from "lucide-react";
@@ -13,6 +12,7 @@ import { usePublicProfile, useMenu } from "@/lib/queries";
 import { useMusicianSlug, menuHref } from "@/lib/navigation";
 import { useLocale } from "@/lib/i18n";
 import { publicMediaUrl } from "@/lib/public-media";
+import { socialPlatform } from "@/lib/social-platforms";
 import { Loading, ErrorNotice, ExternalLink, cx } from "@/components/ui";
 export function Avatar({
   profile,
@@ -62,16 +62,13 @@ export function ContactLinks({ profile }: { profile: PublicProfile }) {
     : whatsappDigits;
   return (
     <div className="flex flex-wrap gap-2">
-      {profile.socialLinks.map((link, i) => (
-        <ExternalLink key={`${link.platform}-${i}`} href={link.url}>
-          {link.platform.toLowerCase() === "instagram" ? (
-            <Instagram size={17} />
-          ) : (
-            <ArrowUpRight size={17} />
-          )}{" "}
+      {profile.socialLinks.map((link, i) => {
+        const Icon = socialPlatform(link.platform)?.icon;
+        return <ExternalLink key={`${link.platform}-${i}`} href={link.url}>
+          {Icon ? <Icon size={17} aria-hidden="true" /> : <ArrowUpRight size={17} aria-hidden="true" />}{" "}
           {link.platform}
-        </ExternalLink>
-      ))}
+        </ExternalLink>;
+      })}
       {profile.website && (
         <ExternalLink href={profile.website}>
           <Globe size={17} />
