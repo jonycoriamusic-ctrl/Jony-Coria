@@ -25,6 +25,9 @@ import { BrandMark } from "./brand-mark";
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const portal = pathname.startsWith("/portal");
+  const landing = pathname === "/";
+  const authPage = pathname === "/ingresar";
+  const standalone = landing || authPage;
   const slug = useMusicianSlug();
   const guestMenu = menuHref(slug);
   const { t, locale, setLocale } = useLocale();
@@ -35,7 +38,7 @@ export function Shell({ children }: { children: ReactNode }) {
         ["/portal/shows", "Shows", CalendarDays],
         ["/portal/perfil", "Profile", UserRound],
       ] as const)
-    : ([
+    : standalone ? [] : ([
         [guestMenu, "Menu", Music2],
         [guestHref("/pedidos", slug), "My requests", ReceiptText],
         [profileHref(slug), "The show", UserRound],
@@ -72,14 +75,14 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="flex size-10 items-center justify-center rounded-full bg-action text-action-foreground">
               <BrandMark light className="size-10" />
             </span>
-            <span className="text-lg font-semibold leading-[1.05] tracking-tight">
+            <span className={cx("text-lg font-semibold leading-[1.05] tracking-tight", landing && "hidden sm:block")}>
               {locale === "en" ? "music" : "musica"}
               <span className="block text-[11px] font-medium tracking-[.11em]">
                 {locale === "en" ? "menu" : "a la carta"}
               </span>
             </span>
           </Link>
-          <nav
+          {!standalone && <nav
             className="hidden items-center gap-2 md:flex"
             aria-label={t("Menu")}
           >
@@ -99,7 +102,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 {t(label)}
               </Link>
             ))}
-          </nav>
+          </nav>}
           <div className="flex items-center gap-2">
             <SelectField
               label={t("Language")}
@@ -129,12 +132,12 @@ export function Shell({ children }: { children: ReactNode }) {
               >
                 <LogOut size={17} />
               </button>
-            ) : (
+            ) : !authPage && (
               <Link
                 href="/ingresar"
-                className="hidden items-center gap-2 rounded-full border border-border px-4 py-3 text-xs font-semibold lg:flex"
+                className={cx("items-center gap-2 rounded-full border border-border px-4 py-3 text-xs font-semibold", landing ? "inline-flex" : "hidden lg:flex")}
               >
-                {t("Musician access")}
+                <span className="sm:hidden">{t("Sign in")}</span><span className="hidden sm:inline">{t("Musician access")}</span>
                 <ArrowUpRight size={15} />
               </Link>
             )}
@@ -152,14 +155,14 @@ export function Shell({ children }: { children: ReactNode }) {
           <BrandMark className="size-5" /> {locale === "en" ? "Music Menu" : "Musica a la carta"}
         </span>
         <Link
-          href={portal ? guestMenu : "/ingresar"}
+          href={portal ? guestMenu : authPage ? "/#como-funciona" : "/ingresar"}
           className="underline underline-offset-4"
         >
-          {t(portal ? "Open guest view" : "Musician access")}
+          {t(portal ? "Open guest view" : authPage ? "How it works" : "Musician access")}
         </Link>
       </footer>
-      <div className="md:hidden" style={{ height: navHeight }} />
-      <nav
+      {!standalone && <div className="md:hidden" style={{ height: navHeight }} />}
+      {!standalone && <nav
         ref={bottom}
         aria-label={t("Menu")}
         className="pb-safe fixed inset-x-0 bottom-0 z-30 flex min-h-bottom-nav justify-around border-t border-border bg-background/95 px-3 backdrop-blur md:hidden"
@@ -185,7 +188,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="text-center">{t(label)}</span>
           </Link>
         ))}
-      </nav>
+      </nav>}
     </div>
   );
 }

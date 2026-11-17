@@ -28,7 +28,10 @@ export function LoginView() {
   const [message, setMessage] = useState("");
   const [checking, setChecking] = useState(false);
   useEffect(() => {
-    if (!isDemo && auth.musicianReady && auth.musician && new URLSearchParams(window.location.search).get("setup") === "1") setMode("onboard");
+    if (isDemo) return;
+    const params = new URLSearchParams(window.location.search);
+    if (auth.musicianReady && auth.musician && params.get("setup") === "1") setMode("onboard");
+    else if (params.get("mode") === "register" && !auth.musician) setMode("register");
   }, [auth.musicianReady, auth.musician]);
 
   async function enterPortal(destination = "/portal") {

@@ -1,4 +1,4 @@
-import { MenuView } from "@/features/guest/menu";
+import { MusicianLanding } from "@/features/landing/musician-landing";
 export default function Page() {
-  return <MenuView />;
+  return <MusicianLanding />;
 }
