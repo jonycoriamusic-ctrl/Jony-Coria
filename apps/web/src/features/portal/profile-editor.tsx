@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Upload,
   Globe2,
+  Pencil,
 } from "lucide-react";
 import { useDashboard, useCommand } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
@@ -127,7 +128,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
       <div className="space-y-8">
         <section className="rounded-card border border-border p-5 sm:p-7">
           <h2 className="mb-5 text-lg font-semibold">{t("Public profile")}</h2>
-          <div className="relative mb-5 h-36 overflow-hidden rounded-control bg-surface-inverse">
+          <div className="relative h-44 overflow-hidden rounded-control bg-surface-inverse sm:h-64">
             <img
               src={profile.bannerUrl ? publicMediaUrl(profile.bannerUrl, profile.version) : "/stage.svg"}
               alt=""
@@ -149,10 +150,13 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               />
             </label>
           </div>
-          <div className="mb-6 flex items-center gap-3">
-            <Avatar profile={profile} />
-            <label className="cursor-pointer rounded-control border border-border px-4 py-3 text-xs font-semibold">
-              {t("Profile photo")}
+          <div className="relative -mt-12 mb-7 ml-4 inline-block sm:ml-6">
+            <Avatar profile={profile} large />
+            <label
+              title={t("Profile photo")}
+              className="absolute bottom-1 right-1 flex size-9 cursor-pointer items-center justify-center rounded-full border-2 border-surface bg-action text-action-foreground shadow-raised focus-within:ring-2 focus-within:ring-focus focus-within:ring-offset-2 hover:bg-action-hover"
+            >
+              <Pencil size={16} aria-hidden="true" />
               <input
                 aria-label={t("Profile photo")}
                 type="file"
@@ -165,54 +169,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
                 }}
               />
             </label>
-            {profile.avatarUrl && (
-              <Button
-                variant="ghost"
-                className="px-2 text-xs"
-                busy={media.isPending}
-                onClick={() =>
-                  media.mutate(
-                    {
-                      path: "/musician/profile/media/avatar",
-                      method: "DELETE",
-                    },
-                    {
-                      onSuccess: (data) =>
-                        setDraft((prev) =>
-                          prev.version === profile.version
-                            ? { ...prev, version: data.version }
-                            : prev,
-                        ),
-                    },
-                  )
-                }
-              >
-                {t("Remove image")}
-              </Button>
-            )}
           </div>
-          {profile.bannerUrl && (
-            <Button
-              variant="ghost"
-              className="mb-4 px-2 text-xs"
-              busy={media.isPending}
-              onClick={() =>
-                media.mutate(
-                  { path: "/musician/profile/media/banner", method: "DELETE" },
-                  {
-                    onSuccess: (data) =>
-                      setDraft((prev) =>
-                        prev.version === profile.version
-                          ? { ...prev, version: data.version }
-                          : prev,
-                      ),
-                  },
-                )
-              }
-            >
-              {t("Remove banner")}
-            </Button>
-          )}
           <ErrorNotice error={media.error || fileError} />
           {media.isPending && <Notice>{t("Working…")}</Notice>}
           <div className="space-y-5">
