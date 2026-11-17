@@ -353,7 +353,7 @@ export function MenuView({slug: explicitSlug}: {slug?: string} = {}) {
                 </p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted">
                   <MapPin size={12} />
-                  {menu.profile.location || (menu.profile.market === "AU" ? t("Australia") : t("Argentina"))}
+                  {menu.profile.market === "AU" ? t("Australia") : t("Argentina")}
                 </p>
               </div>
             </div>

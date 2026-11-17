@@ -119,12 +119,10 @@ export function PublicProfileView({ slug: explicitSlug }: { slug?: string }) {
             <h1 className="text-4xl font-semibold tracking-tight">
               {p.stageName}
             </h1>
-            {p.location && (
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
-                <MapPin size={15} />
-                {p.location}
-              </p>
-            )}
+            <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
+              <MapPin size={15} />
+              {p.market === "AU" ? t("Australia") : t("Argentina")}
+            </p>
           </div>
           <Link
             href={menuHref(p.slug)}

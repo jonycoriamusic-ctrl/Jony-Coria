@@ -81,7 +81,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
             body: {
               stageName: draft.stageName,
               bio: draft.bio,
-              location: draft.location,
+              location: market === "AU" ? "Australia" : "Argentina",
               publicEmail: draft.publicEmail,
               whatsapp: draft.whatsapp,
               website: draft.website,
@@ -217,16 +217,10 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
               onChange={(e) => field("bio", e.target.value)}
               maxLength={1000}
             />
-            <Field
-              label={t("Location")}
-              value={draft.location}
-              onChange={(e) => field("location", e.target.value)}
-              maxLength={120}
-            />
           </div>
         </section>
         <section className="rounded-card border border-border p-5 sm:p-7">
-          <h2 className="mb-5 text-lg font-semibold">{t("Country and currency")}</h2>
+          <h2 className="mb-5 text-lg font-semibold">{t("Location")}</h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <SelectField label={t("Country")} value={market} onChange={(value) => {
               const next = value as Market;
