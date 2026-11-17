@@ -7,6 +7,7 @@ import {
   Plus,
   QrCode,
   Download,
+  Copy,
   CalendarDays,
   MapPin,
   Users,
@@ -171,9 +172,13 @@ export function QrDialog({
   const [image, setImage] = useState("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<unknown>();
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   useEffect(() => {
     const href = `${location.origin}/q/${encodeURIComponent(slug)}`;
     setUrl(href);
+    setCopied(false);
+    setCopyError(false);
     QRCode.toDataURL(href, {
       width: 800,
       margin: 3,
@@ -205,19 +210,40 @@ export function QrDialog({
         )}
         <p className="break-all text-xs text-muted">{url}</p>
         <ErrorNotice error={error} />
+        {copyError && <p role="alert" className="mt-2 text-xs text-muted">{t("Could not copy link. You can select the URL above.")}</p>}
         {isDemo && <p className="my-4 text-xs leading-5 text-muted">
           {t("This local QR works on this computer only. A public URL comes after deployment.")}
         </p>}
-        {image && (
-          <a
-            href={image}
-            download="musica-a-la-carta-qr.png"
-            className="mt-3 inline-flex items-center gap-2 rounded-control bg-action px-6 py-3 text-sm font-semibold text-action-foreground"
+        <div className="mt-3 flex flex-wrap justify-center gap-3">
+          <Button
+            variant="secondary"
+            disabled={!url}
+            aria-live="polite"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setCopyError(false);
+              } catch {
+                setCopied(false);
+                setCopyError(true);
+              }
+            }}
           >
-            <Download size={17} />
-            {t("Download QR")}
-          </a>
-        )}
+            {copied ? <Check size={17} /> : <Copy size={17} />}
+            {t(copied ? "Link copied" : "Copy link")}
+          </Button>
+          {image && (
+            <a
+              href={image}
+              download="musica-a-la-carta-qr.png"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-action px-6 py-3 text-sm font-semibold text-action-foreground"
+            >
+              <Download size={17} />
+              {t("Download QR")}
+            </a>
+          )}
+        </div>
       </div>
     </Modal>
   );

@@ -1,0 +1,5 @@
+# A6 table card concept
+
+`table-qr-a6-concept.png` is a 1240 × 1748 px (approximately A6 at 300 dpi) design preview. The SVG is its editable layout source; `table-qr-a6-preview.png` is for quick review. The monochrome banner is generated placeholder photography, not Jony's uploaded image. The displayed social handles and email are examples, and the QR URL is an example musician slug. Do not print or distribute this concept as a live table card.
+
+If approved, the musician download should render this composition from the musician's public profile: uploaded banner, stage name, public email, and social URLs presented as platform handles. Missing fields should be omitted without empty labels. A neutral black header should replace a missing banner. The QR must encode the permanent musician URL, never a show ID. Keep the QR black on white with at least four modules of quiet zone, at print resolution, clear of the photo and text. Allow longer stage names and multiple social links to wrap without shrinking the QR below a scannable size. Verify the final export with a physical phone and print before release.
