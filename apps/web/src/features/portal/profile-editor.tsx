@@ -30,7 +30,9 @@ import {
   inputClass,
 } from "@/components/ui";
 import { Avatar } from "@/features/profile/profile-view";
+import { useToast } from "@/components/toast-provider";
 function ProfileForm({ profile }: { profile: MusicianProfile }) {
+  const toast = useToast();
   const { t, money } = useLocale();
   const command = useCommand<MusicianProfile>();
   const media = useCommand<MusicianProfile>();
@@ -64,6 +66,7 @@ function ProfileForm({ profile }: { profile: MusicianProfile }) {
     setFileError(undefined);
     if (file.size > 4 * 1024 * 1024) {
       setFileError(new Error("Image too large"));
+      toast.error("Image too large");
       return;
     }
     const form = new FormData();

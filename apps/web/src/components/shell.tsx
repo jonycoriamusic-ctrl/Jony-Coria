@@ -22,7 +22,10 @@ import { useMusicianSlug, menuHref, profileHref, guestHref } from "@/lib/navigat
 import { useMutation } from "@tanstack/react-query";
 import { cx, Loading, ErrorNotice, Button, Notice, SelectField } from "./ui";
 import { BrandMark } from "./brand-mark";
+import { useToast } from "./toast-provider";
+import { errorMessageKey } from "@/lib/error-messages";
 export function Shell({ children }: { children: ReactNode }) {
+  const toast = useToast();
   const pathname = usePathname();
   const portal = pathname.startsWith("/portal");
   const landing = pathname === "/";
@@ -124,6 +127,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     try {await api("/demo/logout", {method: "POST", role: "musician"});} catch {}
                   }
                   await signOut();
+                  toast.info("Signed out");
                   client.removeQueries({ queryKey: ["musician-dashboard"] });
                   router.push("/ingresar");
                 }}
@@ -209,9 +213,10 @@ export function PortalGuard({children}: {children: ReactNode}) {
 function VerificationNotice() {
   const auth = useAuth();
   const {t, locale} = useLocale();
+  const toast = useToast();
   const [sent, setSent] = useState(false);
-  const send = useMutation({mutationFn: () => sendVerification(locale), onSuccess: () => setSent(true)});
-  const refresh = useMutation({mutationFn: refreshMusician});
+  const send = useMutation({mutationFn: () => sendVerification(locale), onSuccess: () => {setSent(true);toast.info("Verification email sent. Check your inbox.");}, onError: error => toast.error(errorMessageKey(error))});
+  const refresh = useMutation({mutationFn: refreshMusician, onSuccess: () => toast.info("Account status refreshed"), onError: error => toast.error(errorMessageKey(error))});
   if (isDemo || !auth.musician || auth.musician.emailVerified) return null;
   return <section className="mb-6 rounded-card border border-control-border bg-surface-subtle p-5">
     <p className="text-sm font-semibold">{t("Verify your email before opening a show.")}</p>

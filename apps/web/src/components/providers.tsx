@@ -3,6 +3,7 @@ import { Suspense, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/lib/auth-context";
 import { LocaleProvider } from "@/lib/i18n";
+import { ToastProvider } from "./toast-provider";
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
     () =>
@@ -19,7 +20,7 @@ export function Providers({ children }: { children: ReactNode }) {
   );
   return (
     <QueryClientProvider client={client}>
-      <AuthProvider><LocaleProvider><Suspense fallback={<div className="min-h-dvh bg-background" aria-busy="true" />}>{children}</Suspense></LocaleProvider></AuthProvider>
+      <AuthProvider><LocaleProvider><ToastProvider><Suspense fallback={<div className="min-h-dvh bg-background" aria-busy="true" />}>{children}</Suspense></ToastProvider></LocaleProvider></AuthProvider>
     </QueryClientProvider>
   );
 }

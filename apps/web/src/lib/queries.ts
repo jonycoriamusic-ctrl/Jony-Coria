@@ -9,6 +9,9 @@ import { isDemo } from "./auth";
 import { observePublicUpdates, type PublicUpdate } from "./public-updates";
 import { applyPublicUpdate, PUBLIC_RECONCILE_MS, reconcileMenuResponse } from "./public-menu-projection";
 import { rememberLastMenu } from "./last-menu";
+import { useToast } from "@/components/toast-provider";
+import { commandFeedback } from "./command-feedback";
+import { errorMessageKey } from "./error-messages";
 export const keys = {
   menu: ["public-menu"], profile: ["public-profile"],
   requests: ["guest-requests"], dashboard: ["musician-dashboard"],
@@ -89,14 +92,21 @@ export function useShowRequests(showId?: string, finished = false) {
 }
 export function useCommand<T = unknown>() {
   const client = useQueryClient();
+  const toast = useToast();
   return useMutation({
     mutationFn: ({path, body, method = "POST", role = "musician"}: {path: string; body?: unknown; method?: string; role?: "guest" | "musician"}) => api<T>(path, {method, body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body), role}),
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: (_data, action) => {
+      client.invalidateQueries();
+      const feedback = commandFeedback(action);
+      if (feedback) toast[feedback.kind](feedback.message);
+    },
+    onError: error => toast.error(errorMessageKey(error)),
   });
 }
 export function useSongAvailability() {
   const client = useQueryClient();
   const auth = useAuth();
+  const toast = useToast();
   const dashboardKey = [...keys.dashboard, auth.musician?.uid ?? "signed-out"];
   return useMutation({
     mutationFn: ({id, enabled}: {id: string; enabled: boolean}) => api(`/musician/songs/${id}`, {method: "PATCH", role: "musician", body: JSON.stringify({enabled})}),
@@ -106,7 +116,9 @@ export function useSongAvailability() {
       client.setQueryData<DashboardResponse>(dashboardKey, (data) => data ? {...data, songs: data.songs.map((song) => song.id === id ? {...song, enabled} : song)} : data);
       return {previous, dashboardKey};
     },
-    onError: (_error, {id, enabled}, context) => {
+    onSuccess: (_data, {enabled}) => toast.success(enabled ? "Song available" : "Song unavailable"),
+    onError: (error, {id, enabled}, context) => {
+      toast.error(errorMessageKey(error));
       if (context?.previous === undefined) return;
       client.setQueryData<DashboardResponse>(context.dashboardKey, (data) => data ? {...data, songs: data.songs.map((song) => song.id === id && song.enabled === enabled ? {...song, enabled: context.previous!} : song)} : data);
     },

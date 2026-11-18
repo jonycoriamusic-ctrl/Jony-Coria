@@ -10,6 +10,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { Button, Field, PasswordField, ErrorNotice, Notice, SelectField } from "@/components/ui";
 import { BrandMark } from "@/components/brand-mark";
+import { useToast } from "@/components/toast-provider";
+import { errorMessageKey } from "@/lib/error-messages";
 
 type Mode = "login" | "register" | "reset" | "onboard";
 export function LoginView() {
@@ -17,6 +19,7 @@ export function LoginView() {
   const router = useRouter();
   const client = useQueryClient();
   const auth = useAuth();
+  const toast = useToast();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState(isDemo ? "jony@demo.local" : "");
   const [password, setPassword] = useState(isDemo ? "musica-demo" : "");
@@ -55,26 +58,31 @@ export function LoginView() {
       } else if (mode === "reset") {
         await resetPassword(email, locale);
         setMessage("If an account exists, a password reset email has been sent.");
+        toast.info("If an account exists, a password reset email has been sent.");
       } else if (mode === "register") {
         if (password !== confirmPassword) throw new AuthFailure("PASSWORD_MISMATCH", "Passwords do not match.");
         await registerMusician(email, password);
         setPassword("");
         setConfirmPassword("");
         setMode("onboard");
+        toast.success("Account created. Set up your musician profile.");
         try {await sendVerification(locale); setMessage("Check your email to verify your account before opening a show.");}
         catch {setMessage("Your account was created. You can resend the verification email from your portal.");}
       } else if (mode === "onboard") {
         await api("/musician/onboard", {method: "POST", role: "musician", body: json({stageName, slug, market: market ?? suggestedMarket})});
+        toast.success("Musician profile created");
         await enterPortal("/portal/perfil");
       } else {
         await signInMusician(email, password);
         setPassword("");
         await enterPortal();
+        toast.success("Signed in");
       }
     },
+    onError: error => toast.error(errorMessageKey(error)),
   });
   // An authenticated user may continue after a reload without recreating an account.
-  const continueMutation = useMutation({mutationFn: enterPortal});
+  const continueMutation = useMutation({mutationFn: enterPortal, onError: error => toast.error(errorMessageKey(error))});
   const switchMode = (next: Mode) => {setMode(next);setMessage("");mutation.reset();continueMutation.reset();};
   const action = isDemo ? "Enter the demo" : mode === "register" ? "Create account" : mode === "reset" ? "Send reset email" : mode === "onboard" ? "Create musician profile" : "Sign in";
   return <div className="mx-auto grid max-w-4xl overflow-hidden rounded-sheet border border-border md:grid-cols-2">
@@ -92,7 +100,7 @@ export function LoginView() {
       {!isDemo && auth.musician && mode !== "onboard" ? <div className="mt-7 space-y-4">
         <p className="break-all text-sm text-muted">{auth.musician.email}</p>
         <Button className="w-full" busy={continueMutation.isPending || checking} onClick={() => continueMutation.mutate()}>{t("Continue to my portal")}<ArrowRight size={17}/></Button>
-        <Button variant="ghost" className="w-full" onClick={async () => {await signOutMusician();switchMode("login");}}>{t("Use another account")}</Button>
+        <Button variant="ghost" className="w-full" onClick={async () => {await signOutMusician();switchMode("login");toast.info("Signed out");}}>{t("Use another account")}</Button>
         <ErrorNotice error={continueMutation.error}/>
       </div> : <form className="mt-7 space-y-5" onSubmit={(event) => {event.preventDefault();mutation.mutate();}}>
         {mode === "onboard" ? <>

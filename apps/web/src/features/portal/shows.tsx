@@ -24,6 +24,7 @@ import { useLocale } from "@/lib/i18n";
 import { downloadQrPrintCard } from "@/lib/qr-print-card";
 import { permanentQrUrl } from "@/lib/last-menu";
 import { showLocalDateTime, showStartInstant } from "@/lib/show-date-time";
+import { useToast } from "@/components/toast-provider";
 import {
   Button,
   Field,
@@ -46,6 +47,7 @@ function ShowEditor({
   onClose: () => void;
 }) {
   const { t } = useLocale();
+  const toast = useToast();
   const command = useCommand();
   const timeZone = timeZoneOf(profile.market, profile.timeZone);
   const [title, setTitle] = useState(show?.title || "");
@@ -66,6 +68,7 @@ function ShowEditor({
           const instant = showStartInstant(day, startTime, timeZone);
           if (!instant) {
             setDateError(t("Choose a valid local date and time."));
+            toast.error("Choose a valid local date and time.");
             return;
           }
           setDateError("");
@@ -179,6 +182,7 @@ export function QrDialog({
   onClose: () => void;
 }) {
   const { t } = useLocale();
+  const toast = useToast();
   const [image, setImage] = useState("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<unknown>();
@@ -236,10 +240,12 @@ export function QrDialog({
               try {
                 await navigator.clipboard.writeText(url);
                 setCopied(true);
+                toast.success("Link copied");
                 setCopyError(false);
               } catch {
                 setCopied(false);
                 setCopyError(true);
+                toast.error("Could not copy link. You can select the URL above.");
               }
             }}
           >
@@ -254,8 +260,10 @@ export function QrDialog({
               setDownloadError(false);
               try {
                 await downloadQrPrintCard(profile, url);
+                toast.success("Print card downloaded");
               } catch {
                 setDownloadError(true);
+                toast.error("Could not create print card. Please try again.");
               } finally {
                 setDownloading(false);
               }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRequests, useRequest, useCommand } from "@/lib/queries";
 import { useLocale } from "@/lib/i18n";
+import { useToast } from "@/components/toast-provider";
 import type { Role } from "@/lib/api";
 import { isDemo } from "@/lib/auth";
 import { useMusicianSlug, guestHref, menuHref } from "@/lib/navigation";
@@ -138,6 +139,7 @@ function ArrowUpRightIcon() {
   return <ArrowRight size={17} className="ml-auto mt-3 text-muted" />;
 }
 export function RequestDetail({ id }: { id: string }) {
+  const toast = useToast();
   const currentSlug = useMusicianSlug();
   const query = useRequest(id);
   const command = useCommand<MusicRequest>();
@@ -163,10 +165,12 @@ export function RequestDetail({ id }: { id: string }) {
   async function copyBankDetail(value: string, kind: "alias" | "cbu" | "payId") {
     try {
       await navigator.clipboard.writeText(value);
+      toast.success("Payment detail copied");
       setCopied(kind);
       setTimeout(() => setCopied(null), 2500);
     } catch {
       setFileError(new Error("Clipboard unavailable"));
+      toast.error("Clipboard unavailable");
     }
   }
   async function attach(file?: File) {
@@ -174,6 +178,7 @@ export function RequestDetail({ id }: { id: string }) {
     setFileError(undefined);
     if (file.size > 4 * 1024 * 1024) {
       setFileError(new Error("Image too large"));
+      toast.error("Image too large");
       return;
     }
     const form = new FormData();
