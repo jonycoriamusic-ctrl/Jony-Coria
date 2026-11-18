@@ -8,6 +8,7 @@ import { useMusicianSlug } from "./navigation";
 import { isDemo } from "./auth";
 import { observePublicUpdates, type PublicUpdate } from "./public-updates";
 import { applyPublicUpdate, PUBLIC_RECONCILE_MS, reconcileMenuResponse } from "./public-menu-projection";
+import { rememberLastMenu } from "./last-menu";
 export const keys = {
   menu: ["public-menu"], profile: ["public-profile"],
   requests: ["guest-requests"], dashboard: ["musician-dashboard"],
@@ -31,11 +32,32 @@ export function useMenu(explicitSlug?: string) {
     }, () => {if (!disposed) {latest.current = null;setLiveConnected(false);client.invalidateQueries({queryKey: key});}}).then(stop => {if (disposed) stop(); else unsubscribe = stop;}).catch(() => {if (!disposed) {latest.current = null;setLiveConnected(false);client.invalidateQueries({queryKey: key});}});
     return () => {disposed = true; unsubscribe?.(); if (refresh) clearTimeout(refresh);};
   }, [slug, client]);
-  return useQuery({queryKey: [...keys.menu, slug], queryFn: async () => {
+  useEffect(() => {
+    if (!slug) return;
+    const refresh = () => {
+      if (document.visibilityState === "visible") client.invalidateQueries({queryKey: [...keys.menu, slug]});
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) refresh();
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [slug, client]);
+  const query = useQuery({queryKey: [...keys.menu, slug], queryFn: async () => {
     const startedAt = Date.now();
     const menu = await api<MenuResponse>(`/public/menu?slug=${encodeURIComponent(slug)}`);
     return reconcileMenuResponse(menu, latest.current?.slug === slug ? latest.current : null, startedAt);
   }, enabled: !!slug, refetchInterval: isDemo ? 1000 : liveConnected ? 60000 : 15000});
+  useEffect(() => {
+    if (query.data?.profile.slug === slug) {
+      rememberLastMenu({slug, stageName: query.data.profile.stageName});
+    }
+  }, [slug, query.data?.profile.slug, query.data?.profile.stageName]);
+  return query;
 }
 export function usePublicProfile(explicitSlug?: string) {
   const slug = useMusicianSlug(explicitSlug);

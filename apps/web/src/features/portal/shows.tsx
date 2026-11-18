@@ -22,6 +22,7 @@ import { useDashboard, useCommand, useShowRequests } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
 import { downloadQrPrintCard } from "@/lib/qr-print-card";
+import { permanentQrUrl } from "@/lib/last-menu";
 import { showLocalDateTime, showStartInstant } from "@/lib/show-date-time";
 import {
   Button,
@@ -186,7 +187,7 @@ export function QrDialog({
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
   useEffect(() => {
-    const href = `${location.origin}/q/${encodeURIComponent(profile.slug)}`;
+    const href = permanentQrUrl(profile.slug, location.origin);
     setUrl(href);
     setCopied(false);
     setCopyError(false);

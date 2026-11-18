@@ -6,6 +6,8 @@ import type { Locale } from "@musica/contracts";
 import { BrandMark } from "@/components/brand-mark";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
+import { menuHref } from "@/lib/navigation";
+import { useLastMenu } from "@/lib/use-last-menu";
 
 type LandingCopy = {
   eyebrow: string;
@@ -228,13 +230,19 @@ const stepIcons = [ListMusic, CalendarDays, QrCode, Radio] as const;
 const benefitIcons = [Music2, QrCode, Smartphone] as const;
 
 export function MusicianLanding() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const lastMenu = useLastMenu();
   const content = copy[locale];
   const accountHref = isDemo ? "/ingresar" : "/ingresar?mode=register";
 
   return <div className="space-y-24 pb-10 sm:space-y-32">
     <section className="grid items-center gap-10 py-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)] lg:gap-16 lg:py-16" aria-labelledby="landing-title">
       <div>
+        {lastMenu && <Link href={menuHref(lastMenu.slug)} className="mb-7 inline-flex min-h-12 max-w-full items-center gap-3 rounded-control border border-border bg-surface-subtle px-4 py-2.5 text-sm font-semibold hover:bg-surface-hover">
+          <Music2 size={18} className="shrink-0" aria-hidden="true" />
+          <span className="truncate">{t("Back to the menu")} · {lastMenu.stageName}</span>
+          <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
+        </Link>}
         <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] text-muted">{content.eyebrow}</p>
         <h1 id="landing-title" className="max-w-2xl text-[clamp(3.25rem,7vw,5.5rem)] font-semibold leading-[0.98] tracking-[-0.07em]">
           <span className="block">{content.headline[0]}</span>
