@@ -67,7 +67,7 @@ export function LoginView() {
         setMode("onboard");
         toast.success("Account created. Set up your musician profile.");
         try {await sendVerification(locale); setMessage("Check your email to verify your account before opening a show.");}
-        catch {setMessage("Your account was created. You can resend the verification email from your portal.");}
+        catch {setMessage("Your account was created. You can resend the verification email from your portal.");toast.warning("Your account was created. You can resend the verification email from your portal.");}
       } else if (mode === "onboard") {
         await api("/musician/onboard", {method: "POST", role: "musician", body: json({stageName, slug, market: market ?? suggestedMarket})});
         toast.success("Musician profile created");

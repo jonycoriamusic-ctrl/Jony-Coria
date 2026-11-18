@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "APP_ENV=non-prod DEMO_MODE=true tsx watch src/server.ts",
+    "dev": "node init && APP_ENV=non-prod DEMO_MODE=true tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/**/*.test.ts",
-    "dev:firebase": "DEMO_MODE=false tsx watch src/server.ts",
-    "build": "node scripts/build.mjs",
+    "dev:firebase": "node init && DEMO_MODE=false tsx watch src/server.ts",
+    "build": "node init && node scripts/build.mjs",
     "test:emulator": "tsx --test src/firebase/*.integration.test.ts"
   },
   "dependencies": {

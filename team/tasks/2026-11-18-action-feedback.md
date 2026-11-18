@@ -17,7 +17,7 @@ Security reviewer: Pending; payment wording checked against declared-transfer mo
 
 ## Experience and acceptance criteria
 
-Messages sit below the device safe area at the top. Each has an icon, plain language, a close button, and automatic dismissal after 5 seconds (7 for errors). At most three are shown. Success appears only after the operation succeeds. A queued transfer claim states that it was **not verified** by the bank. Field validation remains near the field as well as in a notification when appropriate. Guest identity and other guests' payment data are never included in notification text.
+Messages sit below the device safe area at the top. Each has an icon, plain language, a close button, and automatic dismissal after 5 seconds (7 for warnings and errors). At most three are shown. Success appears only after the operation succeeds. A queued transfer claim states that it was **not verified** by the bank. Field validation remains near the field as well as in a notification when appropriate. Guest identity and other guests' payment data are never included in notification text.
 
 ### Guest actions
 
@@ -45,11 +45,13 @@ All server mutations also show a localized, safe error if they fail. Form contro
 
 ## Architecture and design evidence
 
-Reusable `ToastProvider` owns the queue and timers above route content. `useCommand` maps the confirmed server action to a message, while specific flows handle reservation, authentication, clipboard, and print actions. Five locale tables supply the copy. The visual treatment uses the app's white surface, black border rail, neutral text, and semantic Tailwind tokens. Independent visual critique remains pending.
+Reusable `ToastProvider` owns the queue and timers above route content. `useCommand` maps the confirmed server action to a message, while specific flows handle reservation, authentication, clipboard, and print actions. Five locale tables supply the copy. The visual treatment uses the app's white surface and neutral text, with semantic Tailwind tokens for muted green success, amber warning, red error, and neutral information rails. A failed automatic verification-email send after account creation uses the warning treatment. Independent visual critique remains pending.
 
 ## Delivery and verification
 
 `npm run typecheck -w @musica/web` passed. `npm run test -w @musica/web` passed 21 tests, including message mapping and locale coverage. The production Netlify builds completed for both sites. Manual production deploys: `musicaalacarta` `6afd50c84677873db367bfb5` and `themusicmenu` `6afd5323347d90ded567c4f3`. Root, login, public QR/profile routes, and `/api/v1/health` returned HTTP 200 on the relevant production sites; both health responses reported Firebase production mode. Browser interaction and physical-device visual review remain pending; no independent UI approval is claimed.
+
+Color update on 2026-11-18: TypeScript and both Netlify production builds passed. The built stylesheet contains all three new semantic border classes. Manual deploys: `musicaalacarta` `6afd5659425b6be07df41b82` and `themusicmenu` `6afd56a649c83dc14a87b2fb`. Both production profile routes and both Firebase API health checks returned HTTP 200. In the local demo, the error toast rendered with `rgb(182, 76, 85)` and the success toast with `rgb(47, 122, 91)`; screenshots were captured for those states. The amber token and class were verified in the built stylesheet, but its warning state was not triggered in a browser. Independent visual review and physical-device testing remain pending. The local Next.js development overlay still reports a pre-existing hydration warning unrelated to the toast accent change.
 
 ## Decisions and handoff
 
