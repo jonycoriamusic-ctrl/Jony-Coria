@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import type { MusicRequest, Show } from "@musica/contracts";
+import { timeZoneOf, type MusicRequest, type Show } from "@musica/contracts";
 import {
   Radio,
   Plus,
@@ -105,7 +105,7 @@ function ShowCapacity({ show, playedCount }: { show: Show; playedCount: number }
 export function DashboardView() {
   const query = useDashboard();
   const command = useCommand();
-  const { t, money } = useLocale();
+  const { t, money, date } = useLocale();
   const [tab, setTab] = useState("queue");
   const search = useSearchParams();
   const router = useRouter();
@@ -151,7 +151,10 @@ export function DashboardView() {
         onChange={setSelectedShow}
         placeholder={t("No active show")}
         className="mb-6 max-w-md"
-        options={[...data.shows].reverse().map((s) => ({value: s.id, label: `${s.title} · ${s.date.slice(0, 10)}`}))}
+        options={[...data.shows].reverse().map((s) => ({
+          value: s.id,
+          label: `${s.title} · ${date(s.date, {year: "numeric", month: "2-digit", day: "2-digit"}, timeZoneOf(data.profile.market, data.profile.timeZone))}`,
+        }))}
       />
       {show ? (
         <>

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { MARKET_SETTINGS, marketOf, type Locale, type Market } from "@musica/contracts";
 import { translations } from "./translations";
+import { browserTimeZone, formatZonedDate } from "./date-time";
 
 export type { Locale } from "@musica/contracts";
 export { translations } from "./translations";
@@ -68,6 +69,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // A fixed server/client first render avoids hydration mismatch. Restore afterward.
   const [locale, updateLocale] = useState<Locale>("es-AR");
   const [suggestedMarket, setSuggestedMarket] = useState<Market>("AR");
+  const [viewerTimeZone, setViewerTimeZone] = useState<string>(MARKET_SETTINGS.AR.defaultTimeZone);
+
+  useEffect(() => {
+    setViewerTimeZone(browserTimeZone(MARKET_SETTINGS.AR.defaultTimeZone));
+  }, []);
 
   useEffect(() => {
     try {
@@ -127,7 +133,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<LocaleContextValue>(() => {
-    const viewerTimeZone = MARKET_SETTINGS[suggestedMarket].defaultTimeZone;
     return {
       locale,
       suggestedMarket,
@@ -143,27 +148,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
               maximumFractionDigits: 2,
             }).format(cents / 100)
           : "—",
-      date: (input, options = false, timeZone = viewerTimeZone) => {
-        const value = input instanceof Date ? input : new Date(input);
-        if (Number.isNaN(value.getTime())) return "—";
-        const formatOptions: Intl.DateTimeFormatOptions =
-          typeof options === "boolean"
-            ? {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                ...(options
-                  ? ({ hour: "2-digit", minute: "2-digit" } as const)
-                  : {}),
-              }
-            : options;
-        return new Intl.DateTimeFormat(locale, {
-          ...formatOptions,
-          timeZone,
-        }).format(value);
-      },
+      date: (input, options = false, timeZone = viewerTimeZone) =>
+        formatZonedDate(input, locale, timeZone, options),
     };
-  }, [locale, setLocale, suggestedMarket]);
+  }, [locale, setLocale, suggestedMarket, viewerTimeZone]);
 
   return (
     <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>

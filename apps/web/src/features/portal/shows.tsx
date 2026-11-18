@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { DateTime } from "luxon";
 import { timeZoneOf } from "@musica/contracts";
 import type { Show, Song, DashboardResponse, MusicianProfile } from "@musica/contracts";
 import {
@@ -23,6 +22,7 @@ import { useDashboard, useCommand, useShowRequests } from "@/lib/queries";
 import { isDemo } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
 import { downloadQrPrintCard } from "@/lib/qr-print-card";
+import { showLocalDateTime, showStartInstant } from "@/lib/show-date-time";
 import {
   Button,
   Field,
@@ -33,10 +33,6 @@ import {
   Empty,
   cx,
 } from "@/components/ui";
-function localShowDateTime(value: string | Date, timeZone: string) {
-  const date = DateTime.fromJSDate(new Date(value), {zone: timeZone});
-  return {day: date.toFormat("yyyy-MM-dd"), time: date.toFormat("HH:mm")};
-}
 function ShowEditor({
   show,
   songs,
@@ -53,8 +49,8 @@ function ShowEditor({
   const timeZone = timeZoneOf(profile.market, profile.timeZone);
   const [title, setTitle] = useState(show?.title || "");
   const [venue, setVenue] = useState(show?.venue || "");
-  const [day, setDay] = useState(() => localShowDateTime(show?.date ?? new Date(), timeZone).day);
-  const [startTime, setStartTime] = useState(() => show ? localShowDateTime(show.date, timeZone).time : "21:00");
+  const [day, setDay] = useState(() => showLocalDateTime(show?.date ?? new Date(), timeZone).day);
+  const [startTime, setStartTime] = useState(() => show ? showLocalDateTime(show.date, timeZone).time : "21:00");
   const [dateError, setDateError] = useState("");
   const [capacity, setCapacity] = useState(show?.capacity || 20);
   const [selected, setSelected] = useState(
@@ -66,8 +62,8 @@ function ShowEditor({
         className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
-          const instant = DateTime.fromISO(`${day}T${startTime}`, {zone: timeZone});
-          if (!instant.isValid || instant.toFormat("yyyy-MM-dd'T'HH:mm") !== `${day}T${startTime}`) {
+          const instant = showStartInstant(day, startTime, timeZone);
+          if (!instant) {
             setDateError(t("Choose a valid local date and time."));
             return;
           }
@@ -79,7 +75,7 @@ function ShowEditor({
               body: {
                 title,
                 venue,
-                date: instant.toUTC().toISO(),
+                date: instant,
                 capacity,
                 songIds: selected,
                 ...(show ? { version: show.version } : {}),
@@ -112,7 +108,7 @@ function ShowEditor({
             onChange={(e) => setDay(e.target.value)}
           />
           <Field
-            label={`${t("Start time")} (${timeZone.replace("Australia/", "")})`}
+            label={`${t("Start time")} (${timeZone.split("/").at(-1)?.replaceAll("_", " ")})`}
             type="time"
             required
             value={startTime}
